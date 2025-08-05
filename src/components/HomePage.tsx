@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Progress } from '@/components/ui/progress'
 import { fetcher } from '@/lib/utils'
-import { Movie } from '@/types/movie'
+import { Movie, MovieOnly } from '@/types/movie'
 import { isAfter, parseISO } from 'date-fns'
 import { Bell, Calendar, Clock, MoreHorizontal, Play, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -47,33 +47,6 @@ const mockContinueWatching = [
   },
 ]
 
-const mockUpcoming = [
-  {
-    title: 'The Boys',
-    type: 'Episode',
-    date: 'Aug 4',
-    thumbnail: '/placeholder.svg?height=200&width=300&text=The+Boys',
-    description: 'Season 4 finale',
-    isNew: true,
-  },
-  {
-    title: 'Joker 2',
-    type: 'Movie Release',
-    date: 'Oct 15',
-    thumbnail: '/placeholder.svg?height=200&width=300&text=Joker+2',
-    description: 'Folie à Deux',
-    isNew: false,
-  },
-  {
-    title: 'House of Dragon',
-    type: 'Episode',
-    date: 'Aug 8',
-    thumbnail: '/placeholder.svg?height=200&width=300&text=House+of+Dragon',
-    description: 'Season 2 continues',
-    isNew: true,
-  },
-]
-
 const mockNotifications = [
   {
     message: "New episode of 'The Bear' drops tomorrow",
@@ -97,10 +70,10 @@ const mockNotifications = [
 
 export default function HomePageComp() {
   const [notifications, setNotifications] = useState(mockNotifications)
-  const [moviesList, setMoviesList] = useState(null)
-  const [upcomingMovies, setUpcomingMovies] = useState(null)
+  const [moviesList, setMoviesList] = useState<MovieOnly | null>(null)
+  const [upcomingMovies, setUpcomingMovies] = useState<Movie[] | null>(null)
 
-  const { data, error, isLoading } = useSWR(
+  const {} = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/discover/movie`,
     fetcher,
     {
@@ -109,6 +82,8 @@ export default function HomePageComp() {
       },
     }
   )
+
+  console.log('Movies List:', moviesList)
 
   const {} = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/movie/upcoming`,
@@ -127,10 +102,11 @@ export default function HomePageComp() {
   }
 
   const unreleasedMovies = (upcomingMovies ?? [])
-    .filter((item: Movie) => isAfter(parseISO(item.release_date), new Date()))
+    .filter(
+      (item: Movie) =>
+        item.release_date && isAfter(parseISO(item.release_date), new Date())
+    )
     .slice(0, 10)
-
-  console.log('upcoming', upcomingMovies)
 
   return (
     <div className='p-5 lg:p-10 space-y-10'>
@@ -155,7 +131,7 @@ export default function HomePageComp() {
               <div className='relative'>
                 <Image
                   src={item.thumbnail || '/placeholder.svg'}
-                  alt={item.title}
+                  alt={item.title || 'Movie poster'}
                   width={500}
                   height={500}
                   className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
@@ -239,7 +215,7 @@ export default function HomePageComp() {
                           ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
                           : '/placeholder.svg'
                       }
-                      alt={item.title}
+                      alt={item.title || 'Movie poster'}
                       width={500}
                       height={500}
                       className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
@@ -250,7 +226,9 @@ export default function HomePageComp() {
                   <CardContent className='p-2 space-y-2'>
                     <div className='flex items-start justify-between space-y-2'>
                       <div className='flex-1 space-y-2'>
-                        <h3 className='font-semibold text-lg'>{item.title}</h3>
+                        <h3 className='font-semibold text-lg'>
+                          {item.title}
+                        </h3>
                         <p className='text-sm text-muted-foreground line-clamp-4'>
                           {item.overview}
                         </p>

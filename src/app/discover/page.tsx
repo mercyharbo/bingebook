@@ -1,20 +1,5 @@
 'use client'
 
-import {
-  Calendar,
-  Clock,
-  Filter,
-  Play,
-  Plus,
-  Search,
-  SlidersHorizontal,
-  Star,
-  X,
-} from 'lucide-react'
-import Image from 'next/image'
-import { useState } from 'react'
-import useSWR from 'swr'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,12 +37,66 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fetcher } from '@/lib/utils'
-import type { MovieOnly } from '@/types/movie'
+import type { Movie } from '@/types/movie'
+import {
+  Calendar,
+  Clock,
+  Filter,
+  Play,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Star,
+  X,
+} from 'lucide-react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import useSWR from 'swr'
 
-export default function Upcoming() {
+const movieGenres = [
+  { id: 28, name: 'Action' },
+  { id: 12, name: 'Adventure' },
+  { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentary' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' },
+  { id: 14, name: 'Fantasy' },
+  { id: 27, name: 'Horror' },
+  { id: 10402, name: 'Music' },
+  { id: 9648, name: 'Mystery' },
+  { id: 10749, name: 'Romance' },
+  { id: 878, name: 'Science Fiction' },
+  { id: 10770, name: 'TV Movie' },
+  { id: 53, name: 'Thriller' },
+  { id: 10752, name: 'War' },
+  { id: 37, name: 'Western' },
+]
+
+const tvGenres = [
+  { id: 10759, name: 'Action & Adventure' },
+  { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentary' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' },
+  { id: 10762, name: 'Kids' },
+  { id: 9648, name: 'Mystery' },
+  { id: 10763, name: 'News' },
+  { id: 10764, name: 'Reality' },
+  { id: 10765, name: 'Sci-Fi & Fantasy' },
+  { id: 10766, name: 'Soap' },
+  { id: 10767, name: 'Talk' },
+  { id: 10768, name: 'War & Politics' },
+  { id: 37, name: 'Western' },
+]
+
+export default function Discover() {
   const router = useRouter()
-  const [upcomingMovies, setUpcomingMovies] = useState<MovieOnly[] | null>(null)
+  const [movieList, setMoviesList] = useState<Movie[] | null>(null)
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [minDate, setMinDate] = useState<string>('')
   const [maxDate, setMaxDate] = useState<string>('')
@@ -65,36 +104,26 @@ export default function Upcoming() {
   const [totalPages, setTotalPages] = useState<number>(1)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('popularity.desc')
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [selectedMovie, setSelectedMovie] = useState<MovieOnly | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const genres = [
-    { id: 28, name: 'Action' },
-    { id: 12, name: 'Adventure' },
-    { id: 16, name: 'Animation' },
-    { id: 35, name: 'Comedy' },
-    { id: 80, name: 'Crime' },
-    { id: 99, name: 'Documentary' },
-    { id: 18, name: 'Drama' },
-    { id: 10751, name: 'Family' },
-    { id: 14, name: 'Fantasy' },
-    { id: 27, name: 'Horror' },
-    { id: 10402, name: 'Music' },
-    { id: 9648, name: 'Mystery' },
-    { id: 10749, name: 'Romance' },
-    { id: 878, name: 'Science Fiction' },
-    { id: 10770, name: 'TV Movie' },
-    { id: 53, name: 'Thriller' },
-    { id: 10752, name: 'War' },
-    { id: 37, name: 'Western' },
-  ]
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false)
+  const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie')
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+
+  const genres = mediaType === 'movie' ? movieGenres : tvGenres
 
   const sortOptions = [
     { value: 'popularity.desc', label: 'Most Popular' },
     { value: 'popularity.asc', label: 'Least Popular' },
-    { value: 'release_date.desc', label: 'Latest Release' },
-    { value: 'release_date.asc', label: 'Earliest Release' },
+    {
+      value:
+        mediaType === 'movie' ? 'release_date.desc' : 'first_air_date.desc',
+      label: 'Latest Release',
+    },
+    {
+      value: mediaType === 'movie' ? 'release_date.asc' : 'first_air_date.asc',
+      label: 'Earliest Release',
+    },
     { value: 'vote_average.desc', label: 'Highest Rated' },
     { value: 'vote_average.asc', label: 'Lowest Rated' },
   ]
@@ -105,18 +134,24 @@ export default function Upcoming() {
     language: 'en-US',
     page: currentPage.toString(),
     sort_by: sortBy,
-    with_release_type: '2|3',
+    ...(mediaType === 'movie' ? { with_release_type: '2|3' } : {}),
     ...(selectedGenres.length > 0 && { with_genres: selectedGenres.join(',') }),
-    ...(minDate && { 'release_date.gte': minDate }),
-    ...(maxDate && { 'release_date.lte': maxDate }),
+    ...(minDate && {
+      [mediaType === 'movie' ? 'release_date.gte' : 'first_air_date.gte']:
+        minDate,
+    }),
+    ...(maxDate && {
+      [mediaType === 'movie' ? 'release_date.lte' : 'first_air_date.lte']:
+        maxDate,
+    }),
   })
 
   const { error, isLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/movie/upcoming?${queryParams}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/discover/${mediaType}?${queryParams}`,
     fetcher,
     {
       onSuccess: (data) => {
-        setUpcomingMovies(data.results)
+        setMoviesList(data.results)
         setTotalPages(data.total_pages || 1)
       },
     }
@@ -147,23 +182,23 @@ export default function Upcoming() {
     setCurrentPage(1)
   }
 
-  const filteredMovies = upcomingMovies?.filter((movie) =>
-    movie.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const handleMovieClick = (movie: MovieOnly) => {
-    setSelectedMovie(movie)
-    setIsModalOpen(true)
+  const handleMediaTypeChange = (value: 'movie' | 'tv') => {
+    setMediaType(value)
+    setSelectedGenres([]) // Reset genres when switching media type
+    setCurrentPage(1)
   }
 
-  const handleViewDetails = () => {
-    if (selectedMovie) {
-      router.push(`/movie/${selectedMovie.id}`)
+  const filteredMedia = movieList?.filter((item) => {
+    if (mediaType === 'movie' && item.title) {
+      return item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    } else if (mediaType === 'tv' && item.name) {
+      return item.name.toLowerCase().includes(searchQuery.toLowerCase())
     }
-  }
+    return false
+  })
 
-  const MovieCardSkeleton = () => (
-    <Card className='overflow-hidden p-0'>
+  const MediaCardSkeleton = () => (
+    <Card className='overflow-hidden'>
       <Skeleton className='w-full h-48' />
       <CardContent className='p-4 space-y-2'>
         <Skeleton className='h-6 w-3/4' />
@@ -244,20 +279,35 @@ export default function Upcoming() {
 
       <Separator />
 
-      <div>
-        <h3 className='font-semibold mb-3'>Sort By</h3>
-        <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className='flex flex-col justify-start gap-5 lg:flex-row lg:items-center'>
+        <div className='space-y-2'>
+          <h3 className='font-semibold'>Sort By</h3>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className='space-y-2'>
+          <h3 className='font-semibold'>Media Type</h3>
+          <Select value={mediaType} onValueChange={handleMediaTypeChange}>
+            <SelectTrigger className='w-[150px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='movie'>Movies</SelectItem>
+              <SelectItem value='tv'>TV Shows</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Button
@@ -271,22 +321,40 @@ export default function Upcoming() {
     </div>
   )
 
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie)
+    setIsModalOpen(true)
+  }
+
+  const handleViewDetails = () => {
+    if (selectedMovie) {
+      const path =
+        mediaType === 'movie'
+          ? `/movie/${selectedMovie.id}`
+          : `/tv/${selectedMovie.id}`
+      router.push(path)
+    }
+  }
+
   return (
-    <main className='flex flex-col gap-6 w-full p-5 md:w-full lg:w-full xl:w-full 2xl::w-[90%] mx-auto lg:p-10'>
-      <header className='flex flex-col gap-4'>
+    <main className='flex flex-col gap-6 w-full p-5 lg:w-[90%] mx-auto lg:p-10'>
+      {/* Header */}
+      <div className='flex flex-col gap-4'>
         <div className='flex items-center justify-between'>
           <h1 className='text-3xl font-bold flex items-center gap-2'>
             <Clock className='h-8 w-8 text-primary' />
-            Upcoming Movies
+            {mediaType === 'movie' ? 'Upcoming Movies' : 'Upcoming TV Shows'}
           </h1>
         </div>
 
         {/* Search and Filters */}
         <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-          <div className='relative flex-1 w-full lg:max-w-md'>
+          <div className='relative flex-1 w-full lg:w-auto'>
             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
-              placeholder='Search upcoming movies...'
+              placeholder={`Search upcoming ${
+                mediaType === 'movie' ? 'movies' : 'TV shows'
+              }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className='pl-10 w-full h-12 lg:w-auto'
@@ -316,7 +384,7 @@ export default function Upcoming() {
               <SheetTrigger asChild>
                 <Button
                   variant='outline'
-                  className='lg:hidden bg-transparent lg:w-auto w-full h-12'
+                  className='lg:hidden bg-transparent w-full lg:w-auto'
                 >
                   <SlidersHorizontal className='h-4 w-4' />
                   Filters
@@ -329,14 +397,14 @@ export default function Upcoming() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent
-                side='right'
-                className='w-[400px] h-dvh pb-[3rem] p-5'
-              >
-                <SheetHeader className='p-0'>
-                  <SheetTitle>Filter Movies</SheetTitle>
+              <SheetContent side='right' className='w-[400px] sm:w-[540px]'>
+                <SheetHeader>
+                  <SheetTitle>
+                    Filter {mediaType === 'movie' ? 'Movies' : 'TV Shows'}
+                  </SheetTitle>
                   <SheetDescription>
-                    Customize your movie discovery experience
+                    Customize your {mediaType === 'movie' ? 'movie' : 'TV show'}{' '}
+                    discovery experience
                   </SheetDescription>
                 </SheetHeader>
                 <div className='mt-6'>
@@ -398,31 +466,33 @@ export default function Upcoming() {
             </Button>
           </div>
         )}
-      </header>
+      </div>
 
       {isLoading && (
         <section
           className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 `}
         >
           {Array.from({ length: 8 }).map((_, i) => (
-            <MovieCardSkeleton key={i} />
+            <MediaCardSkeleton key={i} />
           ))}
         </section>
       )}
 
       {error && (
-        <div className='text-center py-12'>
-          <p className='text-lg text-muted-foreground mb-4'>
-            Error loading movies
+        <div className='text-center py-12 space-y-3'>
+          <p className='text-lg text-muted-foreground'>
+            Error loading {mediaType === 'movie' ? 'movies' : 'TV shows'}
           </p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       )}
 
-      {!isLoading && !error && filteredMovies?.length === 0 && (
+      {!isLoading && !error && filteredMedia?.length === 0 && (
         <div className='text-center py-12'>
           <Calendar className='h-16 w-16 text-muted-foreground mx-auto mb-4' />
-          <h3 className='text-xl font-semibold mb-2'>No movies found</h3>
+          <h3 className='text-xl font-semibold mb-2'>
+            No {mediaType === 'movie' ? 'movies' : 'TV shows'} found
+          </h3>
           <p className='text-muted-foreground mb-4'>
             Try adjusting your filters or search terms
           </p>
@@ -430,34 +500,36 @@ export default function Upcoming() {
         </div>
       )}
 
-      {!isLoading && !error && filteredMovies && filteredMovies.length > 0 && (
+      {!isLoading && filteredMedia && filteredMedia.length > 1 && (
         <section
-          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 `}
+          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`}
         >
-          {filteredMovies.map((movie: MovieOnly) => (
+          {filteredMedia.map((item: Movie) => (
             <Card
-              key={movie.id}
+              key={item.id}
               className={`group p-0 hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer `}
-              onClick={() => handleMovieClick(movie)}
             >
               <div className={`relative `}>
                 <Image
                   src={
-                    movie.poster_path
-                      ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                      : '/placeholder.svg?height=300&width=200&text=No+Image'
+                    item.poster_path
+                      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                      : '/sample-poster.jpg'
                   }
-                  alt={movie.title}
+                  alt={
+                    (mediaType === 'movie' ? item.title : item.name) ||
+                    'Media item'
+                  }
                   width={500}
                   height={750}
-                  className={`object-cover group-hover:scale-105 transition-transform duration-300 w-full h-72 `}
+                  className={`object-cover w-full h-72 group-hover:scale-105 transition-transform duration-300 `}
                 />
                 <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
                 <div className='absolute top-2 right-2 flex flex-col gap-1'>
-                  {movie.vote_average > 0 && (
+                  {item.vote_average > 0 && (
                     <Badge className='bg-black/70 text-white'>
                       <Star className='h-3 w-3 mr-1 fill-yellow-400 text-yellow-400' />
-                      {movie.vote_average.toFixed(1)}
+                      {item.vote_average.toFixed(1)}
                     </Badge>
                   )}
                 </div>
@@ -467,7 +539,7 @@ export default function Upcoming() {
                     className='flex-1 bg-primary/90 hover:bg-primary ring-1 ring-gray-500 text-white cursor-pointer'
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleMovieClick(movie)
+                      handleMovieClick(item)
                     }}
                   >
                     View Details
@@ -486,21 +558,31 @@ export default function Upcoming() {
               <CardContent className={`p-3 space-y-3 `}>
                 <div>
                   <h3 className='font-semibold text-lg line-clamp-1'>
-                    {movie.title}
+                    {mediaType === 'movie' ? item.title : item.name}
                   </h3>
                   <p className={`text-sm text-muted-foreground line-clamp-2 `}>
-                    {movie.overview || 'No description available.'}
+                    {item.overview || 'No description available.'}
                   </p>
                 </div>
 
                 <div className='flex flex-wrap gap-2'>
                   <Badge variant='outline' className='text-xs'>
-                    {movie.original_language.toUpperCase()}
+                    {item.original_language.toUpperCase()}
                   </Badge>
                   <Badge variant='secondary' className='text-xs'>
-                    {new Date(movie.release_date).toLocaleDateString()}
+                    {(
+                      mediaType === 'movie'
+                        ? item.release_date
+                        : item.first_air_date
+                    )
+                      ? new Date(
+                          mediaType === 'movie'
+                            ? item.release_date!
+                            : item.first_air_date!
+                        ).toLocaleDateString()
+                      : 'No date'}
                   </Badge>
-                  {movie.adult && (
+                  {item.adult && (
                     <Badge variant='destructive' className='text-xs'>
                       18+
                     </Badge>
@@ -514,8 +596,8 @@ export default function Upcoming() {
 
       {!isLoading &&
         !error &&
-        filteredMovies &&
-        filteredMovies.length > 0 &&
+        filteredMedia &&
+        filteredMedia.length > 0 &&
         totalPages > 1 && (
           <Pagination>
             <PaginationContent>
@@ -575,10 +657,11 @@ export default function Upcoming() {
           </Pagination>
         )}
 
-      {!isLoading && !error && filteredMovies && (
+      {!isLoading && !error && filteredMedia && (
         <div className='text-center text-sm text-muted-foreground'>
-          Showing {filteredMovies.length} movies • Page {currentPage} of{' '}
-          {totalPages}
+          Showing {filteredMedia.length}{' '}
+          {mediaType === 'movie' ? 'movies' : 'TV shows'} • Page {currentPage}{' '}
+          of {totalPages}
         </div>
       )}
 
@@ -586,7 +669,9 @@ export default function Upcoming() {
         <DialogContent className='lg:max-w-[500px] h-[70vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle className='text-xl font-bold'>
-              {selectedMovie?.title}
+              {mediaType === 'movie'
+                ? selectedMovie?.title
+                : selectedMovie?.name}
             </DialogTitle>
             <DialogDescription className='text-sm text-muted-foreground'>
               Quick Preview
@@ -595,7 +680,7 @@ export default function Upcoming() {
 
           {selectedMovie && (
             <div className='space-y-4'>
-              {/* Responsive poster and meta section */}
+              {/* Responsive media details */}
               <div className='flex flex-col sm:flex-row gap-4'>
                 <div className='flex-shrink-0 mx-auto sm:mx-0'>
                   <Image
@@ -604,7 +689,11 @@ export default function Upcoming() {
                         ? `https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`
                         : '/sample-poster.jpg'
                     }
-                    alt={selectedMovie.title}
+                    alt={
+                      (mediaType === 'movie'
+                        ? selectedMovie.title
+                        : selectedMovie.name) || 'Media item'
+                    }
                     width={150}
                     height={200}
                     className='rounded-lg object-cover w-[150px] h-[200px]'
@@ -623,9 +712,17 @@ export default function Upcoming() {
                       {selectedMovie.original_language.toUpperCase()}
                     </Badge>
                     <Badge variant='secondary' className='text-xs'>
-                      {new Date(
-                        selectedMovie.release_date
-                      ).toLocaleDateString()}
+                      {(
+                        mediaType === 'movie'
+                          ? selectedMovie.release_date
+                          : selectedMovie.first_air_date
+                      )
+                        ? new Date(
+                            mediaType === 'movie'
+                              ? selectedMovie.release_date!
+                              : selectedMovie.first_air_date!
+                          ).toLocaleDateString()
+                        : 'No date'}
                     </Badge>
                     {selectedMovie.adult && (
                       <Badge variant='destructive' className='text-xs'>
@@ -649,7 +746,7 @@ export default function Upcoming() {
                 </p>
               </div>
 
-              {/* Buttons */}
+              {/* Action buttons */}
               <div className='flex flex-wrap gap-2 pt-2'>
                 <Button
                   onClick={handleViewDetails}

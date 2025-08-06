@@ -666,7 +666,7 @@ export default function Discover() {
       )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className='lg:max-w-[500px] h-[70vh] overflow-y-auto'>
+        <DialogContent className='lg:max-w-[500px] h-[70vh] overflow-y-auto scrollbar-hide'>
           <DialogHeader>
             <DialogTitle className='text-xl font-bold'>
               {mediaType === 'movie'

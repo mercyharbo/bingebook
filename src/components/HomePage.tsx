@@ -1,51 +1,24 @@
 'use client'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Progress } from '@/components/ui/progress'
 import { fetcher } from '@/lib/utils'
-import { Movie, MovieOnly } from '@/types/movie'
-import { isAfter, parseISO } from 'date-fns'
-import { Bell, Calendar, Clock, MoreHorizontal, Play, Star } from 'lucide-react'
+import { Movie } from '@/types/movie'
+import { format, isAfter, parseISO } from 'date-fns'
+import {
+  Bell,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Info,
+  Plus,
+  Star,
+} from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import useSWR from 'swr'
-
-const mockContinueWatching = [
-  {
-    title: 'Breaking Bad',
-    season: 2,
-    episode: 5,
-    progress: 65,
-    thumbnail: '/placeholder.svg?height=200&width=300&text=Breaking+Bad',
-    rating: 9.5,
-    genre: 'Drama',
-  },
-  {
-    title: 'A Quiet Place',
-    progress: 30,
-    thumbnail: '/placeholder.svg?height=200&width=300&text=A+Quiet+Place',
-    rating: 7.5,
-    genre: 'Horror',
-    duration: '90 min',
-  },
-  {
-    title: 'The Office',
-    season: 3,
-    episode: 12,
-    progress: 85,
-    thumbnail: '/placeholder.svg?height=200&width=300&text=The+Office',
-    rating: 8.7,
-    genre: 'Comedy',
-  },
-]
 
 const mockNotifications = [
   {
@@ -70,20 +43,20 @@ const mockNotifications = [
 
 export default function HomePageComp() {
   const [notifications, setNotifications] = useState(mockNotifications)
-  const [moviesList, setMoviesList] = useState<MovieOnly | null>(null)
+  const [topRated, setTopRated] = useState<Movie[] | null>(null)
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[] | null>(null)
+  const [moviesList, setMoviesList] = useState<Movie[] | null>(null)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   const {} = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/discover/movie`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/tv/top_rated`,
     fetcher,
     {
       onSuccess: (data) => {
-        setMoviesList(data)
+        setTopRated(data.results)
       },
     }
   )
-
-  console.log('Movies List:', moviesList)
 
   const {} = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/movie/upcoming`,
@@ -95,119 +68,216 @@ export default function HomePageComp() {
     }
   )
 
+  const {} = useSWR(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/trending/movie/week`,
+    fetcher,
+    {
+      onSuccess: (data) => {
+        setMoviesList(data.results)
+      },
+    }
+  )
+
+  // Auto-slide functionality
+  useEffect(() => {
+    if (!moviesList || moviesList.length === 0) return
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 5))
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [moviesList])
+
   const markAsRead = (index: number) => {
     setNotifications((prev) =>
       prev.map((notif, i) => (i === index ? { ...notif, isRead: true } : notif))
     )
   }
 
-  const unreleasedMovies = (upcomingMovies ?? [])
-    .filter(
-      (item: Movie) =>
-        item.release_date && isAfter(parseISO(item.release_date), new Date())
+  const nextSlide = () => {
+    if (!moviesList) return
+    setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 5))
+  }
+
+  const prevSlide = () => {
+    if (!moviesList) return
+    setCurrentSlide(
+      (prev) =>
+        (prev - 1 + Math.min(moviesList.length, 5)) %
+        Math.min(moviesList.length, 5)
     )
-    .slice(0, 10)
+  }
+
+  const unreleasedMovies = (upcomingMovies ?? []).filter(
+    (item: Movie): item is Movie & { release_date: string } =>
+      item.release_date != null &&
+      isAfter(
+        parseISO(item.release_date),
+        new Date('2025-08-06T02:49:00+01:00')
+      )
+  )
+
+  const heroMovies = moviesList?.slice(0, 5) || []
 
   return (
-    <div className='p-5 lg:p-10 space-y-10'>
-      {/* Continue Watching Section */}
-      <section className='space-y-5'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-xl font-bold flex items-center gap-2'>
-            <Play className='h-6 w-6 text-primary' />
-            Continue Watching
-          </h2>
-          <Button variant='ghost' size='sm'>
-            View All
-          </Button>
-        </div>
+    <div className='space-y-10 pt-5'>
+      {moviesList && moviesList.length > 0 && (
+        <section className='relative h-[70vh] overflow-hidden rounded-2xl'>
+          <div className='relative w-full h-full'>
+            <section className='relative h-[70vh] overflow-hidden rounded-2xl mx-5 lg:mx-10'>
+              <div className='relative w-full h-full'>
+                {heroMovies.map((movie: Movie, index: number) => (
+                  <div
+                    key={movie.id}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${
+                      index === currentSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <Image
+                      src={
+                        movie.backdrop_path
+                          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+                          : '/placeholder.svg?height=600&width=1200&text=No+Image'
+                      }
+                      alt={movie.title || movie.name || 'Media backdrop'}
+                      fill
+                      className='object-cover'
+                      priority={index === 0}
+                    />
+                    <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
 
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5'>
-          {mockContinueWatching.map((item, i) => (
-            <Card
-              key={i}
-              className='group hover:shadow-lg transition-all duration-300 overflow-hidden p-0'
-            >
-              <div className='relative'>
-                <Image
-                  src={item.thumbnail || '/placeholder.svg'}
-                  alt={item.title || 'Movie poster'}
-                  width={500}
-                  height={500}
-                  className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
-                />
-                <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
-                <Button
-                  size='icon'
-                  className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity'
-                >
-                  <Play className='h-4 w-4' />
-                </Button>
-                <div className='absolute top-2 right-2 flex gap-1'>
-                  <Badge variant='secondary' className='text-xs'>
-                    <Star className='h-3 w-3 mr-1' />
-                    {item.rating}
-                  </Badge>
-                </div>
+                    {/* Content */}
+                    <div className='absolute inset-0 flex items-center z-10'>
+                      <div className='container mx-auto px-8 lg:px-16'>
+                        <div className='max-w-2xl space-y-6'>
+                          <div className='space-y-2'>
+                            <Badge className='bg-red-600 hover:bg-red-700 text-white'>
+                              Trending Now
+                            </Badge>
+                            <h1 className='text-4xl lg:text-6xl font-bold text-white leading-tight'>
+                              {movie.title || movie.name}
+                            </h1>
+                          </div>
+
+                          <div className='flex items-center gap-4 text-white/90'>
+                            <div className='flex items-center gap-1'>
+                              <Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
+                              <span className='font-semibold'>
+                                {movie.vote_average.toFixed(1)}
+                              </span>
+                            </div>
+                            <div className='flex items-center gap-1'>
+                              <Calendar className='h-4 w-4' />
+                              <span>
+                                {movie.release_date || movie.first_air_date
+                                  ? format(
+                                      parseISO(
+                                        movie.release_date ||
+                                          movie.first_air_date ||
+                                          ''
+                                      ),
+                                      'MMM d, yyyy'
+                                    )
+                                  : 'N/A'}
+                              </span>
+                            </div>
+                            <Badge
+                              variant='outline'
+                              className='text-white border-white/30'
+                            >
+                              {movie.original_language.toUpperCase()}
+                            </Badge>
+                          </div>
+
+                          <p className='text-lg text-white/90 leading-relaxed line-clamp-3 max-w-xl'>
+                            {movie.overview}
+                          </p>
+
+                          <div className='flex gap-4'>
+                            <Button size='lg' variant='destructive'>
+                              <Plus className='h-5 w-5' />
+                              Add to Watchlist
+                            </Button>
+                            <Button
+                              size='lg'
+                              variant='outline'
+                              className='text-black border-white/30 hover:bg-white/80'
+                              asChild
+                            >
+                              <Link
+                                href={`/${movie.title ? 'movie' : 'tv'}/${
+                                  movie.id
+                                }`}
+                                prefetch={false}
+                              >
+                                <Info className='h-5 w-5' />
+                                More Info
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <CardContent className='p-2 space-y-3'>
-                <div className='flex items-start justify-between'>
-                  <div className='space-y-2'>
-                    <h3 className='font-semibold text-lg'>{item.title}</h3>
-                    <p className='text-sm text-muted-foreground'>
-                      {item.season
-                        ? `S${item.season}E${item.episode}`
-                        : item.duration}{' '}
-                      • {item.genre}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant='ghost' size='icon' className='h-8 w-8'>
-                        <MoreHorizontal className='h-4 w-4' />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end'>
-                      <DropdownMenuItem>
-                        Remove from Continue Watching
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>Add to Watchlist</DropdownMenuItem>
-                      <DropdownMenuItem>Mark as Watched</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+              {/* Navigation Arrows */}
+              <Button
+                variant='ghost'
+                size='icon'
+                className='absolute left-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white hover:text-white cursor-pointer border-none z-20'
+                onClick={prevSlide}
+              >
+                <ChevronLeft className='h-6 w-6' />
+              </Button>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white hover:text-white cursor-pointer border-none z-20'
+                onClick={nextSlide}
+              >
+                <ChevronRight className='h-6 w-6' />
+              </Button>
+            </section>
+          </div>
 
-                <div className='space-y-2'>
-                  <div className='flex items-center justify-between text-sm'>
-                    <span className='text-muted-foreground'>Progress</span>
-                    <span className='font-medium'>{item.progress}%</span>
-                  </div>
-                  <Progress value={item.progress} className='h-2' />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+          {/* Slide Indicators */}
+          <div className='absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2'>
+            {heroMovies.map((_, index) => (
+              <button
+                key={index}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index === currentSlide ? 'bg-white' : 'bg-white/40'
+                }`}
+                onClick={() => setCurrentSlide(index)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Upcoming Releases Section */}
-      <section className='space-y-5'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-xl font-bold flex items-center gap-2'>
-            <Calendar className='h-6 w-6 text-primary' />
-            Upcoming Releases
-          </h2>
-          <Button variant='ghost' size='sm'>
-            View Calendar
-          </Button>
-        </div>
-
-        <div className='overflow-x-auto'>
-          <div className='flex gap-6 snap-x snap-mandatory px-4'>
-            {unreleasedMovies?.map((item: Movie) => (
-              <div key={item.id} className='snap-start shrink-0 w-72'>
-                <Card className='group hover:shadow-lg transition-all duration-300 overflow-hidden p-0 cursor-pointer'>
+      <div className='p-5 lg:p-10 space-y-10'>
+        <section className='space-y-5'>
+          <div className='flex items-center justify-between'>
+            <h2 className='text-xl font-bold flex items-center gap-2'>
+              Trending Movies
+            </h2>
+            <Link href={'/discover'}>
+              <Button variant='ghost' size='sm'>
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto'>
+            {moviesList?.slice(0, 10).map((item: Movie) => (
+              <Link
+                href={`/movie/${item.id}`}
+                key={item.id}
+                className='snap-start shrink-0 w-72'
+              >
+                <Card className='group hover:shadow-lg transition-all h-full duration-300 overflow-hidden p-0 cursor-pointer'>
                   <div className='relative'>
                     <Image
                       src={
@@ -222,13 +292,10 @@ export default function HomePageComp() {
                     />
                     <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
                   </div>
-
                   <CardContent className='p-2 space-y-2'>
                     <div className='flex items-start justify-between space-y-2'>
                       <div className='flex-1 space-y-2'>
-                        <h3 className='font-semibold text-lg'>
-                          {item.title}
-                        </h3>
+                        <h3 className='font-semibold text-lg'>{item.title}</h3>
                         <p className='text-sm text-muted-foreground line-clamp-4'>
                           {item.overview}
                         </p>
@@ -244,71 +311,188 @@ export default function HomePageComp() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Notifications Section */}
-      <section>
-        <div className='flex items-center justify-between mb-6'>
-          <h2 className='text-xl font-bold flex items-center gap-2'>
-            <Bell className='h-6 w-6 text-primary' />
-            Notifications
-            {notifications.filter((n) => !n.isRead).length > 0 && (
-              <Badge variant='destructive' className='rounded-full'>
-                {notifications.filter((n) => !n.isRead).length}
-              </Badge>
-            )}
-          </h2>
-          <Button variant='ghost' size='sm'>
-            Mark All Read
-          </Button>
-        </div>
+        <section className='space-y-5'>
+          <div className='flex items-center justify-between'>
+            <h2 className='text-xl font-bold flex items-center gap-2'>
+              Top Rated TV Shows
+              <Star className='h-6 w-6 text-primary' />
+            </h2>
+            <Link href={'/discover'}>
+              <Button variant='ghost' size='sm'>
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto'>
+            {topRated?.slice(0, 10).map((item: Movie) => (
+              <Link
+                href={`/tv/${item.id}`}
+                key={item.id}
+                className='snap-start shrink-0 w-72'
+              >
+                <Card className='group hover:shadow-lg transition-all duration-300 overflow-hidden p-0 cursor-pointer'>
+                  <div className='relative'>
+                    <Image
+                      src={
+                        item.poster_path
+                          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                          : '/placeholder.svg'
+                      }
+                      alt={item.title || 'Movie poster'}
+                      width={500}
+                      height={500}
+                      className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
+                    />
+                    <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
+                  </div>
+                  <CardContent className='p-2 space-y-2'>
+                    <div className='flex items-start justify-between space-y-2'>
+                      <div className='flex-1 space-y-2'>
+                        <h3 className='font-semibold text-lg'>{item.name}</h3>
+                        <p className='text-sm text-muted-foreground line-clamp-4'>
+                          {item.overview}
+                        </p>
+                        <div className='flex items-center gap-2'>
+                          <Badge variant='outline' className='text-xs'>
+                            {item.original_language.toUpperCase()}
+                          </Badge>
+                          <span className='text-sm font-medium text-primary'>
+                            {item.release_date}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-        <div className='space-y-3'>
-          {notifications.map((notification, i) => (
-            <Card
-              key={i}
-              className={`transition-all duration-200 cursor-pointer hover:shadow-md ${
-                !notification.isRead ? 'border-primary/50 bg-primary/5' : ''
-              }`}
-              onClick={() => markAsRead(i)}
-            >
-              <CardContent className='p-4'>
-                <div className='flex items-start gap-3'>
-                  <div
-                    className={`h-2 w-2 rounded-full mt-2 ${
-                      !notification.isRead ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                  <div className='flex-1 space-y-2'>
-                    <p
-                      className={`text-sm ${
-                        !notification.isRead
-                          ? 'font-medium'
-                          : 'text-muted-foreground'
+        {unreleasedMovies.length > 0 && (
+          <section className='space-y-5'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-xl font-bold flex items-center gap-2'>
+                <Calendar className='h-6 w-6 text-primary' />
+                Upcoming Releases
+              </h2>
+              <Button variant='ghost' size='sm'>
+                View Calendar
+              </Button>
+            </div>
+            <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto'>
+              {unreleasedMovies?.map((item: Movie) => (
+                <Link
+                  href={`/movie/${item.id}`}
+                  key={item.id}
+                  className='snap-start shrink-0 w-72'
+                >
+                  <Card className='group hover:shadow-lg transition-all duration-300 overflow-hidden p-0 cursor-pointer'>
+                    <div className='relative'>
+                      <Image
+                        src={
+                          item.poster_path
+                            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                            : '/placeholder.svg'
+                        }
+                        alt={item.title || 'Movie poster'}
+                        width={500}
+                        height={500}
+                        className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
+                      />
+                      <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
+                    </div>
+                    <CardContent className='p-2 space-y-2'>
+                      <div className='flex items-start justify-between space-y-2'>
+                        <div className='flex-1 space-y-2'>
+                          <h3 className='font-semibold text-lg'>
+                            {item.title}
+                          </h3>
+                          <p className='text-sm text-muted-foreground line-clamp-4'>
+                            {item.overview}
+                          </p>
+                          <div className='flex items-center gap-2'>
+                            <Badge variant='outline' className='text-xs'>
+                              {item.original_language.toUpperCase()}
+                            </Badge>
+                            <span className='text-sm font-medium text-primary'>
+                              {item.release_date}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Notifications Section */}
+        <section>
+          <div className='flex items-center justify-between mb-6'>
+            <h2 className='text-xl font-bold flex items-center gap-2'>
+              <Bell className='h-6 w-6 text-primary' />
+              Notifications
+              {notifications.filter((n) => !n.isRead).length > 0 && (
+                <Badge variant='destructive' className='rounded-full'>
+                  {notifications.filter((n) => !n.isRead).length}
+                </Badge>
+              )}
+            </h2>
+            <Button variant='ghost' size='sm'>
+              Mark All Read
+            </Button>
+          </div>
+          <div className='space-y-3'>
+            {notifications.map((notification, i) => (
+              <Card
+                key={i}
+                className={`transition-all duration-200 cursor-pointer hover:shadow-md ${
+                  !notification.isRead ? 'border-primary/50 bg-primary/5' : ''
+                }`}
+                onClick={() => markAsRead(i)}
+              >
+                <CardContent className='p-4'>
+                  <div className='flex items-start gap-3'>
+                    <div
+                      className={`h-2 w-2 rounded-full mt-2 ${
+                        !notification.isRead ? 'bg-primary' : 'bg-muted'
                       }`}
-                    >
-                      {notification.message}
-                    </p>
-                    <div className='flex items-center gap-2'>
-                      <Clock className='h-3 w-3 text-muted-foreground' />
-                      <span className='text-xs text-muted-foreground'>
-                        {notification.time}
-                      </span>
-                      <Badge variant='outline' className='text-xs capitalize'>
-                        {notification.type}
-                      </Badge>
+                    />
+                    <div className='flex-1 space-y-2'>
+                      <p
+                        className={`text-sm ${
+                          !notification.isRead
+                            ? 'font-medium'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {notification.message}
+                      </p>
+                      <div className='flex items-center gap-2'>
+                        <Clock className='h-3 w-3 text-muted-foreground' />
+                        <span className='text-xs text-muted-foreground'>
+                          {notification.time}
+                        </span>
+                        <Badge variant='outline' className='text-xs capitalize'>
+                          {notification.type}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

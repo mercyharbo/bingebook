@@ -3,6 +3,7 @@
 import {
   Award,
   Calendar,
+  ChevronDown,
   ChevronLeft,
   Clock,
   ExternalLink,
@@ -12,11 +13,13 @@ import {
   Share2,
   Star,
   Tv,
+  Eye,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import useSWR from 'swr'
+import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,6 +31,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { fetcher } from '@/lib/utils'
@@ -131,11 +140,176 @@ interface SimilarTVShow {
   first_air_date: string
 }
 
+interface Episode {
+  id: number
+  episode_number: number
+  name: string
+  overview: string
+  air_date: string | null
+  still_path: string | null
+  runtime: number | null
+}
+
+interface SeasonCardProps {
+  season: TVShowDetails['seasons'][0]
+  tvId: string
+}
+
+function SeasonCard({ season, tvId }: SeasonCardProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const { data: seasonData, isLoading: seasonLoading } = useSWR<{
+    episodes: Episode[]
+  }>(
+    isOpen
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/season/${season.season_number}?language=en-US`
+      : null,
+    fetcher
+  )
+  const episodes: Episode[] = seasonData?.episodes || []
+
+  // Check if episode has aired based on current date (August 6, 2025, 12:49 AM WAT)
+  const hasEpisodeAired = (airDate: string | null) => {
+    if (!airDate) return false
+    const currentDate = new Date('2025-08-06T00:49:00+01:00') // WAT is UTC+1
+    const episodeDate = new Date(airDate)
+    return episodeDate <= currentDate
+  }
+
+  return (
+    <Card key={season.id} className='hover:shadow-lg transition-shadow p-2'>
+      <CardContent className='p-0'>
+        <div className='flex flex-col sm:flex-row gap-4'>
+          <div className='flex-shrink-0 w-[100px] sm:w-[120px]'>
+            <Image
+              src={
+                season.poster_path
+                  ? `https://image.tmdb.org/t/p/w300${season.poster_path}`
+                  : '/sample-poster.jpg'
+              }
+              alt={season.name}
+              width={120}
+              height={180}
+              className='rounded-lg object-cover w-full'
+              sizes='(max-width: 640px) 100px, 120px'
+            />
+          </div>
+          <div className='flex-1 space-y-2'>
+            <div className='flex items-center justify-between'>
+              <h3 className='text-lg sm:text-xl font-semibold'>
+                {season.name}
+              </h3>
+              <div className='flex items-center gap-2'>
+                <Badge variant='secondary'>
+                  {season.episode_count} Episode
+                  {season.episode_count !== 1 ? 's' : ''}
+                </Badge>
+                <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant='outline' size='sm'>
+                      Episodes
+                      <ChevronDown className='h-4 w-4 ml-2' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className='w-[300px] sm:w-[400px] max-h-[400px] overflow-y-auto'>
+                    {seasonLoading ? (
+                      <DropdownMenuItem>
+                        <Skeleton className='h-6 w-full' />
+                      </DropdownMenuItem>
+                    ) : episodes.length > 0 ? (
+                      episodes.map((episode) => {
+                        const hasAired = hasEpisodeAired(episode.air_date)
+                        return (
+                          <DropdownMenuItem
+                            key={episode.id}
+                            className={`flex flex-col items-start p-2 ${
+                              !hasAired ? 'opacity-50' : ''
+                            }`}
+                            disabled={!hasAired}
+                          >
+                            <div className='flex w-full gap-2'>
+                              {episode.still_path && (
+                                <Image
+                                  src={`https://image.tmdb.org/t/p/w200${episode.still_path}`}
+                                  alt={episode.name}
+                                  width={80}
+                                  height={45}
+                                  className='rounded object-cover'
+                                  sizes='80px'
+                                />
+                              )}
+                              <div className='flex-1'>
+                                <div className='flex justify-between items-start'>
+                                  <span className='font-semibold text-sm'>
+                                    {episode.episode_number}. {episode.name}
+                                  </span>
+                                  <Button
+                                    variant='outline'
+                                    size='sm'
+                                    disabled={!hasAired}
+                                    onClick={() => {}}
+                                    className='text-xs'
+                                  >
+                                    <Eye className='h-3 w-3 mr-1' />
+                                    Mark as Seen
+                                  </Button>
+                                </div>
+                                {episode.air_date && (
+                                  <p className='text-xs text-muted-foreground'>
+                                    Aired:{' '}
+                                    {new Date(
+                                      episode.air_date
+                                    ).toLocaleDateString()}
+                                  </p>
+                                )}
+                                <p className='text-xs text-muted-foreground line-clamp-2'>
+                                  {episode.overview || 'No overview available.'}
+                                </p>
+                                {episode.runtime && (
+                                  <p className='text-xs text-muted-foreground'>
+                                    Runtime: {episode.runtime}m
+                                  </p>
+                                )}
+                                {!hasAired && (
+                                  <Badge variant='outline' className='mt-1'>
+                                    Upcoming
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        )
+                      })
+                    ) : (
+                      <DropdownMenuItem>
+                        No episodes available.
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            {season.air_date && (
+              <p className='text-xs sm:text-sm text-muted-foreground'>
+                Aired: {new Date(season.air_date).getFullYear()}
+              </p>
+            )}
+            <p className='text-xs sm:text-sm text-muted-foreground'>
+              Progress: 0/{season.episode_count} episodes watched
+            </p>
+            <p className='text-xs sm:text-sm text-muted-foreground line-clamp-3'>
+              {season.overview || 'No overview available for this season.'}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function TVShowDetails() {
   const params = useParams()
   const router = useRouter()
   const tvId = params.id as string
-  // const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
 
   // Fetch TV show details
   const {
@@ -519,50 +693,11 @@ export default function TVShowDetails() {
                     {tvShow.seasons
                       .filter((season) => season.season_number > 0)
                       .map((season) => (
-                        <Card
+                        <SeasonCard
                           key={season.id}
-                          className='hover:shadow-lg transition-shadow p-2'
-                        >
-                          <CardContent className='p-0'>
-                            <div className='flex flex-col sm:flex-row gap-4'>
-                              <div className='flex-shrink-0 w-[100px] sm:w-[120px]'>
-                                <Image
-                                  src={
-                                    season.poster_path
-                                      ? `https://image.tmdb.org/t/p/w300${season.poster_path}`
-                                      : '/sample-poster.jpg'
-                                  }
-                                  alt={season.name}
-                                  width={120}
-                                  height={180}
-                                  className='rounded-lg object-cover w-full'
-                                  sizes='(max-width: 640px) 100px, 120px'
-                                />
-                              </div>
-                              <div className='flex-1 space-y-2'>
-                                <div className='flex items-center justify-between'>
-                                  <h3 className='text-lg sm:text-xl font-semibold'>
-                                    {season.name}
-                                  </h3>
-                                  <Badge variant='secondary'>
-                                    {season.episode_count} Episode
-                                    {season.episode_count !== 1 ? 's' : ''}
-                                  </Badge>
-                                </div>
-                                {season.air_date && (
-                                  <p className='text-xs sm:text-sm text-muted-foreground'>
-                                    Aired:{' '}
-                                    {new Date(season.air_date).getFullYear()}
-                                  </p>
-                                )}
-                                <p className='text-xs sm:text-sm text-muted-foreground line-clamp-3'>
-                                  {season.overview ||
-                                    'No overview available for this season.'}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                          season={season}
+                          tvId={tvId}
+                        />
                       ))}
                   </div>
                 </div>

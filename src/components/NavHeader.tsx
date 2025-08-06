@@ -96,6 +96,7 @@ export default function NavHeader() {
         >
           Discover
         </Link>
+
         <Link
           href='/upcoming'
           className={`text-sm font-medium transition-colors ${
@@ -185,6 +186,7 @@ export default function NavHeader() {
               >
                 Discover
               </Link>
+
               <Link
                 href='/upcoming'
                 className={`text-lg font-medium transition-colors ${

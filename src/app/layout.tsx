@@ -29,17 +29,17 @@ export const metadata: Metadata = {
     'next episode reminder',
     'watch history',
   ],
-  authors: [{ name: 'Damilare', url: 'https://your-portfolio-or-github.com' }],
+  authors: [{ name: 'Damilare', url: 'https://github.com/mercyharbo' }],
   creator: 'Damilare',
   openGraph: {
     title: 'BingeBook – Your Personal Movie & Series Tracker',
     description:
       'Organize your watchlist, track episodes, and discover upcoming releases with BingeBook.',
-    url: 'https://your-bingebook-domain.com',
+    url: 'https://bingebook.vercel.app/',
     siteName: 'BingeBook',
     images: [
       {
-        url: 'https://your-bingebook-domain.com/og-image.jpg',
+        url: 'https://bingebook.vercel.app/cover.png',
         width: 1200,
         height: 630,
         alt: 'BingeBook preview',
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     title: 'BingeBook – Track Your Watchlist',
     description:
       'Stay organized with BingeBook. Track movies, series, and episode progress effortlessly.',
-    images: ['https://your-bingebook-domain.com/twitter-card.jpg'],
-    creator: '@yourTwitterHandle',
+    images: ['https://bingebook.vercel.app/cover.png'],
+    creator: '@codewithmercy',
   },
 }
 

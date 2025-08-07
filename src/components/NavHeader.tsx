@@ -68,7 +68,6 @@ export default function NavHeader() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
-      console.log('event', event)
     })
 
     return () => subscription.unsubscribe()
@@ -135,13 +134,12 @@ export default function NavHeader() {
 
     clearUser()
     setToggleMenu(false)
+    router.refresh()
   }
 
   const handleToggleMenu = () => {
     setToggleMenu(!toggleMenu)
   }
-
-  console.log('user info:', user)
 
   return (
     <nav className='sticky top-0 z-50 flex justify-between items-center w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 px-5 lg:px-10 mx-auto'>
@@ -238,6 +236,7 @@ export default function NavHeader() {
                 <AvatarImage
                   src={user.user_metadata.avatar_url}
                   alt='User avatar'
+                  className='object-cover object-top'
                 />
               )}
               <AvatarFallback className='text-xs'>

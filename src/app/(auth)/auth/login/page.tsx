@@ -12,37 +12,57 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Eye, EyeOff, Film, Lock, Mail } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client' // 👈 Import Supabase client
+import {
+  AlertCircle,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Film,
+  Lock,
+  Mail,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const supabase = createClient()
+
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Handle login logic here
-      console.log('Login attempt:', formData)
-    }, 2000)
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }))
+  }
+
+  // --- 👇 MODIFIED SUBMIT HANDLER ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null) // Reset error before new attempt
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
+
+    if (error) {
+      setError(error.message) // Set error message from Supabase
+      setIsLoading(false)
+    } else {
+      router.refresh()
+      router.push('/profile') // Redirect to a protected route
+    }
   }
 
   return (
@@ -62,27 +82,18 @@ export default function LoginPage() {
               Back
             </Button>
 
-            <div className='flex items-center justify-center gap-2'>
+            <Link href={'/'} className='flex items-center justify-center gap-1'>
               <div className='bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-lg'>
                 <Film className='h-6 w-6 text-white' />
               </div>
               <span className='text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent'>
                 BingeBook
               </span>
-            </div>
-
-            <div className='space-y-2'>
-              <h1 className='text-3xl font-bold text-foreground'>
-                Welcome back
-              </h1>
-              <p className='text-muted-foreground'>
-                Sign in to your account to continue your movie journey
-              </p>
-            </div>
+            </Link>
           </div>
 
           <Card className='border-0 shadow-lg'>
-            <CardHeader className='space-y-1 justify-start items-start'>
+            <CardHeader className='space-y-1 text-center justify-center items-center'>
               <CardTitle className='text-2xl'>Sign In</CardTitle>
               <CardDescription className=''>
                 Enter your credentials to access your account
@@ -151,6 +162,14 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {/* --- 👇 ERROR MESSAGE DISPLAY --- */}
+                {error && (
+                  <div className='flex items-center gap-x-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive'>
+                    <AlertCircle className='h-4 w-4' />
+                    <p>{error}</p>
+                  </div>
+                )}
+
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center space-x-2'>
                     <input
@@ -208,27 +227,8 @@ export default function LoginPage() {
               Discover, track, and enjoy thousands of movies and TV shows. Your
               personalized entertainment hub awaits.
             </p>
-            <div className='flex items-center justify-center gap-8'>
-              <div className='text-center'>
-                <div className='text-2xl font-bold'>10K+</div>
-                <div className='text-sm text-white/80'>Movies</div>
-              </div>
-              <div className='text-center'>
-                <div className='text-2xl font-bold'>5K+</div>
-                <div className='text-sm text-white/80'>TV Shows</div>
-              </div>
-              <div className='text-center'>
-                <div className='text-2xl font-bold'>1M+</div>
-                <div className='text-sm text-white/80'>Users</div>
-              </div>
-            </div>
           </div>
         </div>
-
-        {/* Floating Movie Cards */}
-        <div className='absolute top-20 right-20 w-32 h-48 bg-white/10 backdrop-blur-sm rounded-lg transform rotate-12 opacity-60' />
-        <div className='absolute bottom-32 right-32 w-28 h-42 bg-white/10 backdrop-blur-sm rounded-lg transform -rotate-6 opacity-40' />
-        <div className='absolute top-1/2 right-12 w-24 h-36 bg-white/10 backdrop-blur-sm rounded-lg transform rotate-6 opacity-50' />
       </div>
     </main>
   )

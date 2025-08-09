@@ -8,25 +8,27 @@ import {
   Clock,
   ExternalLink,
   Eye,
-  Heart,
   Play,
   Plus,
   Share2,
   Star,
+  Trash2,
   Tv,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 
+import TVProgressTracker from '@/components/TvProgressTracker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -37,9 +39,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import LoadingSpinner from '@/components/ui/loading-spinner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
+import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
+import { toast } from 'react-toastify'
+import { WatchlistItem } from '../../watchlist/page'
 
 interface TVShowDetails {
   id: number
@@ -167,10 +174,9 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
   )
   const episodes: Episode[] = seasonData?.episodes || []
 
-  // Check if episode has aired based on current date (August 6, 2025, 12:49 AM WAT)
   const hasEpisodeAired = (airDate: string | null) => {
     if (!airDate) return false
-    const currentDate = new Date('2025-08-06T00:49:00+01:00') // WAT is UTC+1
+    const currentDate = new Date('2025-08-06T00:49:00+01:00')
     const episodeDate = new Date(airDate)
     return episodeDate <= currentDate
   }
@@ -309,13 +315,26 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
 export default function TVShowDetails() {
   const params = useParams()
   const router = useRouter()
+  const supabase = createClient()
   const tvId = params.id as string
+
+  const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
+
+  const {
+    setAddingToWatchlist,
+    addingToWatchlist,
+    isRemovingFromWatchlist,
+    setIsRemovingFromWatchlist,
+    isLoadingWatchlist,
+    setIsLoadingWatchlist,
+  } = useWatchlistStore()
 
   // Fetch TV show details
   const {
     data: tvShow,
     error: tvError,
     isLoading: tvLoading,
+    mutate,
   } = useSWR<TVShowDetails>(
     tvId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}?language=en-US`
@@ -355,6 +374,42 @@ export default function TVShowDetails() {
     fetcher
   )
 
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      setIsLoadingWatchlist(true)
+      try {
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession()
+        if (sessionError || !sessionData.session) {
+          setIsLoadingWatchlist(false)
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('watchlist')
+          .select('*')
+          .eq('user_id', sessionData.session.user.id)
+          .eq('tmdb_id', tvId)
+          .eq('media_type', 'tv')
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 means no rows found
+          console.error('Error fetching watchlist:', error)
+          toast.error('Failed to load watchlist')
+        } else {
+          setWatchlistItem(data || null)
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error)
+        toast.error('An unexpected error occurred')
+      } finally {
+        setIsLoadingWatchlist(false)
+      }
+    }
+    if (tvShow) fetchWatchlist()
+  }, [tvShow, supabase, tvId, setIsLoadingWatchlist])
+
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
   const crew: Crew[] = credits?.crew || []
   const creators = tvShow?.created_by || []
@@ -388,6 +443,68 @@ export default function TVShowDetails() {
         return 'destructive'
       default:
         return 'secondary'
+    }
+  }
+
+  const addToWatchlist = async () => {
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      toast.error('Please log in to add to watchlist')
+      return
+    }
+
+    setAddingToWatchlist(true)
+
+    const userId = sessionData.session.user.id
+    const tmdbData = {
+      ...tvShow,
+      seasons: tvShow?.seasons || [],
+    }
+    const { error } = await supabase.from('watchlist').insert({
+      user_id: userId,
+      tmdb_id: tvShow?.id,
+      media_type: 'tv',
+      tmdb_data: tmdbData,
+      poster_path: tvShow?.poster_path,
+      is_seen: false,
+      seen_episodes: {},
+      completed_seasons: [],
+      created_at: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error adding to watchlist:', error)
+      toast.error('Failed to add to watchlist')
+    } else {
+      toast.success('Added to watchlist successfully')
+      setAddingToWatchlist(false)
+      window.location.reload()
+    }
+  }
+
+  const removeFromWatchlist = async () => {
+    if (!watchlistItem) return
+    setIsRemovingFromWatchlist(true)
+    try {
+      const { error } = await supabase
+        .from('watchlist')
+        .delete()
+        .eq('id', watchlistItem.id)
+      if (error) {
+        console.error('Error removing from watchlist:', error)
+        toast.error('Failed to remove from watchlist')
+      } else {
+        setWatchlistItem(null)
+        toast.success('Removed from watchlist successfully')
+        setIsRemovingFromWatchlist(false)
+        mutate()
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred')
     }
   }
 
@@ -571,15 +688,63 @@ export default function TVShowDetails() {
                     </Dialog>
                   )}
 
-                  <Button variant='outline' size='lg' className='min-w-[140px]'>
-                    <Plus className='h-4 w-4 mr-2' />
-                    Add to Watchlist
-                  </Button>
-
-                  <Button variant='outline' size='lg' className='min-w-[140px]'>
-                    <Heart className='h-4 w-4 mr-2' />
-                    Favorite
-                  </Button>
+                  {!watchlistItem && !isLoadingWatchlist && (
+                    <Button
+                      variant='outline'
+                      onClick={addToWatchlist}
+                      disabled={addingToWatchlist}
+                      className='h-10'
+                    >
+                      {addingToWatchlist ? (
+                        <div className='flex items-center gap-2'>
+                          <LoadingSpinner size={20} />
+                          <span>Adding...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Plus className='h-4 w-4' />
+                          Add to List
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {watchlistItem && !isLoadingWatchlist && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant='destructive' className='h-10'>
+                          <Trash2 className='h-4 w-4' /> Remove from Watchlist
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Remove from Watchlist</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to remove {tvShow.name} from
+                            your watchlist?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className='flex gap-2 justify-end'>
+                          <Button variant='outline' onClick={() => {}}>
+                            Cancel
+                          </Button>
+                          <Button
+                            variant='destructive'
+                            disabled={isRemovingFromWatchlist}
+                            onClick={removeFromWatchlist}
+                          >
+                            {isRemovingFromWatchlist ? (
+                              <div className='flex items-center gap-2'>
+                                <LoadingSpinner size={20} />
+                                <span>Removing...</span>
+                              </div>
+                            ) : (
+                              'Remove'
+                            )}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
 
                   <Button variant='outline' size='lg' className='min-w-[140px]'>
                     <Share2 className='h-4 w-4 mr-2' />
@@ -690,7 +855,7 @@ export default function TVShowDetails() {
                 <div className='space-y-4'>
                   <h2 className='text-xl sm:text-2xl font-bold'>Seasons</h2>
                   <div className='space-y-4'>
-                    {tvShow.seasons
+                    {/* {tvShow.seasons
                       .filter((season) => season.season_number > 0)
                       .map((season) => (
                         <SeasonCard
@@ -698,7 +863,23 @@ export default function TVShowDetails() {
                           season={season}
                           tvId={tvId}
                         />
-                      ))}
+                      ))} */}
+                    {tvShow.seasons.map((season) => (
+                      <SeasonCard
+                        key={season.id}
+                        season={season}
+                        tvId={tvShow.id.toString()}
+                      />
+                    ))}
+                    {watchlistItem && (
+                      <TVProgressTracker
+                        watchlistId={watchlistItem.id}
+                        tmdbId={tvShow.id}
+                        seasons={tvShow.seasons}
+                        seenEpisodes={watchlistItem.seen_episodes}
+                        completedSeasons={watchlistItem.completed_seasons}
+                      />
+                    )}
                   </div>
                 </div>
               </TabsContent>

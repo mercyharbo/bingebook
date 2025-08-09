@@ -6,11 +6,11 @@ import {
   ChevronLeft,
   Clock,
   ExternalLink,
-  Heart,
   Play,
   Plus,
   Share2,
   Star,
+  Trash2,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -23,13 +23,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import LoadingSpinner from '@/components/ui/loading-spinner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
+import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-toastify'
+import { WatchlistItem } from '../../watchlist/page'
 
 interface MovieDetails {
   id: number
@@ -112,14 +119,26 @@ interface SimilarMovie {
 export default function MovieDetails() {
   const params = useParams()
   const router = useRouter()
+  const supabase = createClient()
   const movieId = params.id as string
-  // const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+
+  const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
+
+  const {
+    setAddingToWatchlist,
+    addingToWatchlist,
+    isRemovingFromWatchlist,
+    setIsRemovingFromWatchlist,
+    isLoadingWatchlist,
+    setIsLoadingWatchlist,
+  } = useWatchlistStore()
 
   // Fetch movie details
   const {
     data: movie,
     error: movieError,
     isLoading: movieLoading,
+    mutate,
   } = useSWR<MovieDetails>(
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}?language=en-US`
@@ -159,6 +178,42 @@ export default function MovieDetails() {
     fetcher
   )
 
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      setIsLoadingWatchlist(true)
+      try {
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession()
+        if (sessionError || !sessionData.session) {
+          setIsLoadingWatchlist(false)
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('watchlist')
+          .select('*')
+          .eq('user_id', sessionData.session.user.id)
+          .eq('tmdb_id', movieId)
+          .eq('media_type', 'movie')
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 means no rows found
+          console.error('Error fetching watchlist:', error)
+          toast.error('Failed to load watchlist')
+        } else {
+          setWatchlistItem(data || null)
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error)
+        toast.error('An unexpected error occurred')
+      } finally {
+        setIsLoadingWatchlist(false)
+      }
+    }
+    if (movie) fetchWatchlist()
+  }, [movie, supabase, movieId, setIsLoadingWatchlist])
+
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
   const crew: Crew[] = credits?.crew || []
   const director = crew.find((person) => person.job === 'Director')
@@ -189,6 +244,81 @@ export default function MovieDetails() {
     if (score >= 7) return 'text-green-500'
     if (score >= 5) return 'text-yellow-500'
     return 'text-red-500'
+  }
+
+  /**
+   * The function `addToWatchlist` adds a movie to a user's watchlist in a React application using
+   * TypeScript and Supabase.
+   * @returns The `addToWatchlist` function is an asynchronous function that adds a movie to a user's
+   * watchlist. It first checks if the user is logged in, then sets a flag `addingToWatchlist` to true.
+   * It then retrieves the user ID from the session data, creates an object `tmdbData` from the `movie`
+   * object, and inserts a new record into the 'watch
+   */
+  const addToWatchlist = async () => {
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      toast.error('Please log in to add to watchlist')
+      return
+    }
+
+    setAddingToWatchlist(true)
+
+    const userId = sessionData.session.user.id
+    const tmdbData = { ...movie }
+    const { error } = await supabase.from('watchlist').insert({
+      user_id: userId,
+      tmdb_id: movie?.id,
+      media_type: 'movie',
+      tmdb_data: tmdbData,
+      poster_path: movie?.poster_path,
+      is_seen: false,
+      seen_episodes: {},
+      completed_seasons: [],
+      created_at: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error adding to watchlist:', error)
+      toast.error('Failed to add to watchlist')
+    } else {
+      toast.success('Added to watchlist successfully')
+      setAddingToWatchlist(false)
+      window.location.reload()
+    }
+  }
+
+  /**
+   * The function `removeFromWatchlist` asynchronously removes an item from a watchlist in a TypeScript
+   * React application using Supabase, handling errors and displaying toast messages accordingly.
+   * @returns The `removeFromWatchlist` function is an asynchronous function that attempts to delete an
+   * item from the 'watchlist' table in a Supabase database. If the `watchlistItem` is not defined, the
+   * function will return early. Otherwise, it will attempt to delete the item with the specified `id`
+   * from the 'watchlist' table.
+   */
+  const removeFromWatchlist = async () => {
+    if (!watchlistItem) return
+    setIsRemovingFromWatchlist(true)
+    try {
+      const { error } = await supabase
+        .from('watchlist')
+        .delete()
+        .eq('id', watchlistItem?.id)
+      if (error) {
+        console.error('Error removing from watchlist:', error)
+        toast.error('Failed to remove from watchlist')
+      } else {
+        setWatchlistItem(null)
+        toast.success('Removed from watchlist successfully')
+        setIsRemovingFromWatchlist(false)
+        mutate()
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred')
+    }
   }
 
   if (movieLoading) {
@@ -331,6 +461,14 @@ export default function MovieDetails() {
                   ))}
                 </div>
 
+                {/* {watchlistItem && (
+                  <MarkMovieSeenButton
+                    watchlistId={watchlistItem.id}
+                    isSeen={watchlistItem.is_seen}
+                    title={movie.title}
+                  />
+                )} */}
+
                 <div className='flex flex-wrap gap-2'>
                   {trailers.length > 0 && (
                     <Dialog>
@@ -359,15 +497,63 @@ export default function MovieDetails() {
                     </Dialog>
                   )}
 
-                  <Button variant='outline' size='lg' className='px-2'>
-                    <Plus className='h-4 w-4' />
-                    Add to List
-                  </Button>
-
-                  <Button variant='outline' size='lg' className='px-2'>
-                    <Heart className='h-4 w-4' />
-                    Favorite
-                  </Button>
+                  {!watchlistItem && !isLoadingWatchlist && (
+                    <Button
+                      variant='outline'
+                      onClick={addToWatchlist}
+                      disabled={addingToWatchlist}
+                      className='h-10'
+                    >
+                      {addingToWatchlist ? (
+                        <div className='flex items-center gap-2'>
+                          <LoadingSpinner size={20} />
+                          <span>Adding...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Plus className='h-4 w-4' />
+                          Add to List
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {watchlistItem && !isLoadingWatchlist && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant='destructive' className='h-10'>
+                          <Trash2 className='h-4 w-4' /> Remove from Watchlist
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Remove from Watchlist</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to remove {movie.title} from
+                            your watchlist?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className='flex gap-2 justify-end'>
+                          <Button variant='outline' onClick={() => {}}>
+                            Cancel
+                          </Button>
+                          <Button
+                            variant='destructive'
+                            disabled={isRemovingFromWatchlist}
+                            onClick={removeFromWatchlist}
+                          >
+                            {isRemovingFromWatchlist ? (
+                              <div className='flex items-center gap-2'>
+                                <LoadingSpinner size={20} />
+                                <span>Removing...</span>
+                              </div>
+                            ) : (
+                              'Remove'
+                            )}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
 
                   <Button variant='outline' size='lg' className='px-2'>
                     <Share2 className='h-4 w-4' />

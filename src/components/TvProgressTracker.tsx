@@ -17,11 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 import useSWR from 'swr'
+import LoadingSpinner from './ui/loading-spinner'
 
 interface TVProgressTrackerProps {
   watchlistId: number
@@ -40,13 +42,22 @@ export default function TVProgressTracker({
   watchlistId,
   tmdbId,
   seasons,
-  seenEpisodes,
-  completedSeasons,
+  seenEpisodes: initialSeenEpisodes,
+  completedSeasons: initialCompletedSeasons,
 }: TVProgressTrackerProps) {
   const supabase = createClient()
   const [selectedSeason, setSelectedSeason] = useState<string>(
     seasons[0]?.season_number.toString() || '1'
   )
+
+  // Local state to track seen episodes and completed seasons
+  const [seenEpisodes, setSeenEpisodes] =
+    useState<Record<string, string[]>>(initialSeenEpisodes)
+  const [completedSeasons, setCompletedSeasons] = useState<number[]>(
+    initialCompletedSeasons
+  )
+
+  const { loadingEpisodes, setLoadingEpisode } = useWatchlistStore()
 
   const { data, error, isLoading } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tmdbId}/season/${selectedSeason}`,
@@ -57,21 +68,28 @@ export default function TVProgressTracker({
   const episodes: Episode[] = data?.episodes || []
 
   const toggleEpisode = async (episode: string) => {
+    setLoadingEpisode(episode, true)
     try {
       const seasonKey = `season_${selectedSeason}`
       const currentEpisodes = seenEpisodes[seasonKey] || []
       const newEpisodes = currentEpisodes.includes(episode)
         ? currentEpisodes.filter((ep) => ep !== episode)
         : [...currentEpisodes, episode]
+
       const updatedSeenEpisodes = {
         ...seenEpisodes,
         [seasonKey]: newEpisodes,
       }
+
       const seasonEpisodes = episodes.length
       const isSeasonComplete = newEpisodes.length === seasonEpisodes
       const newCompletedSeasons = isSeasonComplete
         ? [...new Set([...completedSeasons, parseInt(selectedSeason)])]
         : completedSeasons.filter((s) => s !== parseInt(selectedSeason))
+
+      // Update local state immediately for instant UI feedback
+      setSeenEpisodes(updatedSeenEpisodes)
+      setCompletedSeasons(newCompletedSeasons)
 
       const { error } = await supabase
         .from('watchlist')
@@ -84,6 +102,9 @@ export default function TVProgressTracker({
 
       if (error) {
         console.error('Error updating episode:', error)
+        // Revert local state on error
+        setSeenEpisodes(seenEpisodes)
+        setCompletedSeasons(completedSeasons)
         toast.error('Failed to update episode')
       } else {
         toast.success(
@@ -91,11 +112,18 @@ export default function TVProgressTracker({
             newEpisodes.includes(episode) ? 'seen' : 'unseen'
           }`
         )
-        window.location.reload() // Refresh to update UI
+        // Optional: You can still call router.refresh() if you need to update other parts of the page
+        // but remove window.location.reload()
+        // router.refresh()
       }
     } catch (error) {
       console.error('Unexpected error:', error)
+      // Revert local state on error
+      setSeenEpisodes(seenEpisodes)
+      setCompletedSeasons(completedSeasons)
       toast.error('An unexpected error occurred')
+    } finally {
+      setLoadingEpisode(episode, false)
     }
   }
 
@@ -134,9 +162,7 @@ export default function TVProgressTracker({
             </SelectContent>
           </Select>
           {isLoading ? (
-            <div className='text-center text-sm text-gray-600 dark:text-gray-400'>
-              Loading episodes...
-            </div>
+            <LoadingSpinner size={40} />
           ) : error ? (
             <div className='text-center text-sm text-red-600 dark:text-red-400'>
               Failed to load episodes
@@ -156,16 +182,25 @@ export default function TVProgressTracker({
                   seenEpisodes[`season_${selectedSeason}`]?.includes(
                     episodeCode
                   )
+                const isLoadingEpisode = loadingEpisodes[episodeCode] || false
                 return (
                   <Button
                     key={episodeCode}
                     size='sm'
                     variant={isSeen ? 'default' : 'outline'}
                     onClick={() => toggleEpisode(episodeCode)}
-                    disabled={isLoading}
+                    disabled={isLoadingEpisode || isLoading}
                     className='text-xs'
                   >
-                    {episodeCode} {isSeen ? '✓' : ''}
+                    {isLoadingEpisode ? (
+                      <div className='flex items-center gap-2'>
+                        <LoadingSpinner size={20} />
+                        {episodeCode}
+                      </div>
+                    ) : (
+                      episodeCode
+                    )}{' '}
+                    {isSeen ? '✓' : ''}
                   </Button>
                 )
               })}

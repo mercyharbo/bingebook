@@ -14,6 +14,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import LoadingSpinner from '@/components/ui/loading-spinner'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import {
   Calendar,
@@ -71,7 +73,7 @@ interface TMDBData {
   seasons?: TMDBSeason[]
 }
 
-interface WatchlistItem {
+export interface WatchlistItem {
   id: number
   user_id: string
   tmdb_id: number
@@ -92,6 +94,9 @@ export default function WatchlistPage() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('added_date')
   const [isLoading, setIsLoading] = useState(true)
+
+  const { isRemovingFromWatchlist, setIsRemovingFromWatchlist } =
+    useWatchlistStore()
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -175,6 +180,7 @@ export default function WatchlistPage() {
   ]
 
   const removeFromWatchlist = async (id: number) => {
+    setIsRemovingFromWatchlist(true)
     try {
       const { error } = await supabase.from('watchlist').delete().eq('id', id)
       if (error) {
@@ -183,6 +189,7 @@ export default function WatchlistPage() {
       } else {
         setWatchlistItems((prev) => prev.filter((item) => item.id !== id))
         toast.success('Item removed from watchlist')
+        setIsRemovingFromWatchlist(false)
       }
     } catch (error) {
       console.error('Unexpected error:', error)
@@ -309,13 +316,9 @@ export default function WatchlistPage() {
         Start building your personal collection of movies and TV shows you want
         to watch.
       </p>
-      <Button
-        size='lg'
-        className='bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-        asChild
-      >
+      <Button size='lg' className='bg-blue-600 text-white' asChild>
         <Link href='/discover'>
-          <Plus className='h-4 w-4 mr-2' />
+          <Plus className='h-4 w-4' />
           Start Adding Titles
         </Link>
       </Button>
@@ -392,9 +395,7 @@ export default function WatchlistPage() {
         </Card>
 
         {isLoading ? (
-          <div className='flex justify-center'>
-            <div className='h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin'></div>
-          </div>
+          <LoadingSpinner size={50} />
         ) : filteredItems.length === 0 ? (
           <EmptyState />
         ) : (
@@ -409,7 +410,7 @@ export default function WatchlistPage() {
                     src={
                       item.poster_path
                         ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                        : '/placeholder.svg?height=300&width=200&text=No+Image'
+                        : '/sample-poster.jpg'
                     }
                     alt={
                       item.media_type === 'movie'
@@ -506,8 +507,16 @@ export default function WatchlistPage() {
                           <Button
                             variant='destructive'
                             onClick={() => removeFromWatchlist(item.id)}
+                            disabled={isRemovingFromWatchlist}
                           >
-                            Remove
+                            {isRemovingFromWatchlist ? (
+                              <div className='flex items-center gap-2'>
+                                <LoadingSpinner />
+                                <span>Removing</span>
+                              </div>
+                            ) : (
+                              'Remove'
+                            )}
                           </Button>
                         </div>
                       </DialogContent>

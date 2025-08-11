@@ -470,7 +470,7 @@ export default function Discover() {
               </SheetTrigger>
               <SheetContent
                 side='right'
-                className='w-[400px] h-[calc(100%-theme(space.16))] sm:w-[540px]'
+                className='w-[400px] h-dvh overflow-auto scrollbar-hide pb-[3rem] p-4'
               >
                 <SheetHeader>
                   <SheetTitle>

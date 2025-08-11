@@ -36,13 +36,16 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
+import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import type { Movie } from '@/types/movie'
 import {
   Calendar,
+  Check,
   Clock,
   Filter,
-  Play,
+  Loader2,
   Plus,
   Search,
   SlidersHorizontal,
@@ -51,7 +54,8 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-toastify'
 import useSWR from 'swr'
 
 const movieGenres = [
@@ -96,6 +100,7 @@ const tvGenres = [
 
 export default function Discover() {
   const router = useRouter()
+  const supabase = createClient()
   const [movieList, setMoviesList] = useState<Movie[] | null>(null)
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [minDate, setMinDate] = useState<string>('')
@@ -109,8 +114,35 @@ export default function Discover() {
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie')
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([])
+  const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
 
   const genres = mediaType === 'movie' ? movieGenres : tvGenres
+
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession()
+      if (sessionError || !sessionData.session) return
+
+      const userId = sessionData.session.user.id
+      const { data, error } = await supabase
+        .from('watchlist')
+        .select('tmdb_id')
+        .eq('user_id', userId)
+        .eq('media_type', 'movie')
+
+      if (error) {
+        console.error('Error fetching watchlist:', error)
+        return
+      }
+
+      const ids = data.map((item: { tmdb_id: number }) => item.tmdb_id)
+      setWatchlistIds(ids)
+    }
+
+    fetchWatchlist()
+  }, [supabase])
 
   const sortOptions = [
     { value: 'popularity.desc', label: 'Most Popular' },
@@ -188,6 +220,45 @@ export default function Discover() {
     setCurrentPage(1)
   }
 
+  const addToWatchlist = async (movie: Movie) => {
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      toast.error('Please log in to add to watchlist')
+      return
+    }
+
+    setAddingToWatchlist(true)
+
+    const userId = sessionData.session.user.id
+    const tmdbData = { ...movie }
+    const { error } = await supabase.from('watchlist').insert({
+      user_id: userId,
+      tmdb_id: movie?.id,
+      media_type: mediaType,
+      tmdb_data: tmdbData,
+      poster_path: movie?.poster_path,
+      is_seen: false,
+      seen_episodes: {},
+      completed_seasons: [],
+      created_at: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error adding to watchlist:', error)
+      toast.error('Failed to add to watchlist')
+      setAddingToWatchlist(false)
+    } else {
+      toast.success('Added to watchlist successfully')
+      setWatchlistIds((prev) => [...prev, movie.id]) // Update watchlistIds locally
+      setAddingToWatchlist(false)
+    }
+  }
+
+  const isInWatchlist = (movieId: number) => watchlistIds.includes(movieId)
+
   const filteredMedia = movieList?.filter((item) => {
     if (mediaType === 'movie' && item.title) {
       return item.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -198,7 +269,7 @@ export default function Discover() {
   })
 
   const MediaCardSkeleton = () => (
-    <Card className='overflow-hidden'>
+    <Card className='overflow-hidden p-0'>
       <Skeleton className='w-full h-48' />
       <CardContent className='p-4 space-y-2'>
         <Skeleton className='h-6 w-3/4' />
@@ -337,9 +408,9 @@ export default function Discover() {
   }
 
   return (
-    <main className='flex flex-col gap-6 w-full p-5 lg:w-[90%] mx-auto lg:p-10'>
+    <main className='flex flex-col gap-6 w-full p-5 mx-auto lg:p-10'>
       {/* Header */}
-      <div className='flex flex-col gap-4'>
+      <header className='flex flex-col gap-4'>
         <div className='flex items-center justify-between'>
           <h1 className='text-3xl font-bold flex items-center gap-2'>
             <Clock className='h-8 w-8 text-primary' />
@@ -466,11 +537,11 @@ export default function Discover() {
             </Button>
           </div>
         )}
-      </div>
+      </header>
 
       {isLoading && (
         <section
-          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 `}
+          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 `}
         >
           {Array.from({ length: 8 }).map((_, i) => (
             <MediaCardSkeleton key={i} />
@@ -502,7 +573,7 @@ export default function Discover() {
 
       {!isLoading && filteredMedia && filteredMedia.length > 1 && (
         <section
-          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`}
+          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`}
         >
           {filteredMedia.map((item: Movie) => (
             <Card
@@ -544,14 +615,14 @@ export default function Discover() {
                   >
                     View Details
                   </Button>
-                  <Button
+                  {/* <Button
                     size='sm'
                     variant='secondary'
                     className='bg-white/90 hover:bg-white cursor-pointer'
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Plus className='h-3 w-3' />
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
 
@@ -666,7 +737,7 @@ export default function Discover() {
       )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className='lg:max-w-[500px] h-[70vh] overflow-y-auto scrollbar-hide'>
+        <DialogContent className='lg:max-w-[500px] h-[60vh] overflow-y-auto scrollbar-hide'>
           <DialogHeader>
             <DialogTitle className='text-xl font-bold'>
               {mediaType === 'movie'
@@ -754,11 +825,25 @@ export default function Discover() {
                 >
                   View Full Details
                 </Button>
-                <Button variant='outline' size='icon'>
-                  <Plus className='h-4 w-4' />
-                </Button>
-                <Button variant='outline' size='icon'>
-                  <Play className='h-4 w-4' />
+                <Button
+                  variant='outline'
+                  onClick={() => addToWatchlist(selectedMovie)}
+                  size='icon'
+                  disabled={
+                    isInWatchlist(selectedMovie.id) && addingToWatchlist
+                  }
+                >
+                  {isInWatchlist(selectedMovie.id) ? (
+                    <Check className='h-4 w-4' />
+                  ) : (
+                    <div className=''>
+                      {addingToWatchlist ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
+                        <Plus className='h-4 w-4' />
+                      )}
+                    </div>
+                  )}
                 </Button>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import FooterComp from '@/components/footer'
 import NavHeader from '@/components/NavHeader'
 import { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -52,6 +53,7 @@ export default function IndexLayout({ children }: { children: ReactNode }) {
     <main>
       <NavHeader />
       {children}
+      <FooterComp />
     </main>
   )
 }

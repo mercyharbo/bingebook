@@ -15,6 +15,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import LoadingSpinner from '@/components/ui/loading-spinner'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination' // Import shadcn Pagination components
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -94,6 +103,8 @@ export default function WatchlistPage() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('added_date')
   const [isLoading, setIsLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1) // New state for current page
+  const itemsPerPage = 25 // Constant for items per page
 
   const { isRemovingFromWatchlist, setIsRemovingFromWatchlist } =
     useWatchlistStore()
@@ -132,6 +143,11 @@ export default function WatchlistPage() {
     fetchWatchlist()
   }, [supabase])
 
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, searchQuery, sortBy])
+
   const filters = [
     { id: 'all', label: 'All', count: watchlistItems.length },
     {
@@ -152,7 +168,10 @@ export default function WatchlistPage() {
         (item) =>
           item.media_type === 'tv' &&
           Object.keys(item.seen_episodes).length > 0 &&
-          !item.tmdb_data.number_of_episodes
+          Object.values(item.seen_episodes).reduce(
+            (sum: number, eps: string[]) => sum + eps.length,
+            0
+          ) < (item.tmdb_data.number_of_episodes || Infinity)
       ).length,
     },
     {
@@ -190,6 +209,11 @@ export default function WatchlistPage() {
         setWatchlistItems((prev) => prev.filter((item) => item.id !== id))
         toast.success('Item removed from watchlist')
         setIsRemovingFromWatchlist(false)
+        // Adjust current page if necessary
+        const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
+        if (currentPage > totalPages && totalPages > 0) {
+          setCurrentPage(totalPages)
+        }
       }
     } catch (error) {
       console.error('Unexpected error:', error)
@@ -270,6 +294,14 @@ export default function WatchlistPage() {
       }
     })
 
+  // Pagination logic
+  const totalItems = filteredItems.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   const stats = {
     totalItems: watchlistItems.length,
     totalHours: watchlistItems
@@ -305,102 +337,112 @@ export default function WatchlistPage() {
   }
 
   const EmptyState = () => (
-    <div className='flex flex-col items-center justify-center py-16 px-4'>
-      <div className='w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mb-6'>
+    <div className='flex flex-col items-center justify-center py-16 px-4 space-y-3'>
+      <div className='w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center'>
         <div className='text-6xl'>🍿</div>
       </div>
-      <h3 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>
+      <h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
         Your watchlist is empty
       </h3>
-      <p className='text-gray-600 dark:text-gray-400 text-center mb-6 max-w-md'>
+      <p className='text-gray-600 dark:text-gray-400 text-center max-w-md'>
         Start building your personal collection of movies and TV shows you want
         to watch.
       </p>
       <Button size='lg' className='bg-blue-600 text-white' asChild>
         <Link href='/discover'>
           <Plus className='h-4 w-4' />
-          Start Adding Titles
+          Start tracking your favorites
         </Link>
       </Button>
     </div>
   )
 
+  if (isLoading) {
+    return (
+      <div className='h-screen overflow-hidden fixed top-0 left-0 w-full z-50 bg-gray-50 dark:bg-gray-900 flex items-center justify-center'>
+        <LoadingSpinner
+          size={60}
+          color='border-gray-900 dark:border-white'
+          // className='p-2'
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      <div className='p-5 lg:p-10 space-y-5'>
-        <div className='text-center space-y-2'>
-          <h1 className='text-4xl md:text-5xl font-bold text-gray-900 dark:text-white'>
-            Your Watchlist
-          </h1>
-          <p className='text-gray-600 dark:text-gray-400'>
-            Keep track of your movies and TV shows
-          </p>
-        </div>
+    <main className='min-h-screen dark:bg-background p-5 lg:p-10 space-y-5'>
+      <div className='text-center space-y-2'>
+        <h1 className='text-4xl md:text-5xl font-bold text-gray-900 dark:text-white'>
+          Your Watchlist
+        </h1>
+        <p className='text-gray-600 dark:text-gray-400'>
+          Keep track of your movies and TV shows
+        </p>
+      </div>
 
+      <div className='flex flex-col lg:flex-row gap-4'>
+        <div className='relative flex-1'>
+          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
+          <Input
+            placeholder='Search watchlist...'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='pl-10 h-12'
+          />
+        </div>
+        <div className='flex gap-2 w-full lg:w-auto'>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className='border border-gray-300 dark:border-gray-700 rounded-md h-12 w-full lg:w-auto px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+          >
+            <option value='added_date'>Sort by Added Date</option>
+            <option value='title'>Sort by Title</option>
+            <option value='release_date'>Sort by Release Date</option>
+            <option value='rating'>Sort by Rating</option>
+          </select>
+        </div>
+      </div>
+
+      <div className='flex flex-wrap gap-2'>
+        {filters.map((filter) => (
+          <Button
+            key={filter.id}
+            variant={activeFilter === filter.id ? 'default' : 'outline'}
+            onClick={() => setActiveFilter(filter.id)}
+            className='text-xs sm:text-sm'
+          >
+            {filter.label} ({filter.count})
+          </Button>
+        ))}
+      </div>
+
+      <Card className='p-4'>
         <div className='flex flex-col sm:flex-row gap-4'>
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
-            <Input
-              placeholder='Search watchlist...'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-10'
-            />
-          </div>
-          <div className='flex gap-2'>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className='border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-            >
-              <option value='added_date'>Sort by Added Date</option>
-              <option value='title'>Sort by Title</option>
-              <option value='release_date'>Sort by Release Date</option>
-              <option value='rating'>Sort by Rating</option>
-            </select>
+          <div className='space-y-2'>
+            <h3 className='text-lg font-semibold'>Watchlist Stats</h3>
+            <p className='text-sm text-gray-600 dark:text-gray-400'>
+              Total Items: {stats.totalItems}
+            </p>
+            <p className='text-sm text-gray-600 dark:text-gray-400'>
+              Total Hours: {stats.totalHours}h
+            </p>
+            <p className='text-sm text-gray-600 dark:text-gray-400'>
+              Completed: {stats.completedItems}
+            </p>
+            <p className='text-sm text-gray-600 dark:text-gray-400'>
+              Currently Watching: {stats.currentlyWatching}
+            </p>
           </div>
         </div>
+      </Card>
 
-        <div className='flex flex-wrap gap-2'>
-          {filters.map((filter) => (
-            <Button
-              key={filter.id}
-              variant={activeFilter === filter.id ? 'default' : 'outline'}
-              onClick={() => setActiveFilter(filter.id)}
-              className='text-xs sm:text-sm'
-            >
-              {filter.label} ({filter.count})
-            </Button>
-          ))}
-        </div>
-
-        <Card className='p-4'>
-          <div className='flex flex-col sm:flex-row gap-4'>
-            <div className='space-y-2'>
-              <h3 className='text-lg font-semibold'>Watchlist Stats</h3>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                Total Items: {stats.totalItems}
-              </p>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                Total Hours: {stats.totalHours}h
-              </p>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                Completed: {stats.completedItems}
-              </p>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                Currently Watching: {stats.currentlyWatching}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {isLoading ? (
-          <LoadingSpinner size={50} />
-        ) : filteredItems.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
-            {filteredItems.map((item) => (
+      {filteredItems.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
+            {paginatedItems.map((item) => (
               <Card
                 key={item.id}
                 className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2'
@@ -503,7 +545,7 @@ export default function WatchlistPage() {
                           </DialogDescription>
                         </DialogHeader>
                         <div className='flex gap-2 justify-end'>
-                          <Button variant='outline'>Cancel</Button>
+                         
                           <Button
                             variant='destructive'
                             onClick={() => removeFromWatchlist(item.id)}
@@ -584,8 +626,82 @@ export default function WatchlistPage() {
               </Card>
             ))}
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Pagination Component */}
+          {totalPages > 1 && (
+            <div className='mt-6'>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const page = index + 1
+                    // Show first 3 pages, last 3 pages, and 2 pages around current page
+                    const isFirstThree = page <= 3
+                    const isLastThree = page > totalPages - 3
+                    const isNearCurrent =
+                      page >= currentPage - 1 && page <= currentPage + 1
+                    const showEllipsisBefore = page === 4 && currentPage > 4
+                    const showEllipsisAfter =
+                      page === totalPages - 3 && currentPage < totalPages - 3
+
+                    if (isFirstThree || isLastThree || isNearCurrent) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className='cursor-pointer'
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    }
+                    if (showEllipsisBefore) {
+                      return (
+                        <PaginationItem key='ellipsis-before'>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )
+                    }
+                    if (showEllipsisAfter) {
+                      return (
+                        <PaginationItem key='ellipsis-after'>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )
+                    }
+                    return null
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
+      )}
+    </main>
   )
 }

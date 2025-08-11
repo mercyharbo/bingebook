@@ -2,9 +2,10 @@
 
 import {
   Calendar,
+  Check,
   Clock,
   Filter,
-  Play,
+  Loader2,
   Plus,
   Search,
   SlidersHorizontal,
@@ -12,7 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 
 import { Badge } from '@/components/ui/badge'
@@ -51,12 +52,16 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
+import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import type { MovieOnly } from '@/types/movie'
 import { useRouter } from 'next/navigation'
+import { toast } from 'react-toastify'
 
 export default function Upcoming() {
   const router = useRouter()
+  const supabase = createClient()
   const [upcomingMovies, setUpcomingMovies] = useState<MovieOnly[] | null>(null)
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [minDate, setMinDate] = useState<string>('')
@@ -68,6 +73,34 @@ export default function Upcoming() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState<MovieOnly | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([])
+  const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
+
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession()
+      if (sessionError || !sessionData.session) return
+
+      const userId = sessionData.session.user.id
+      const { data, error } = await supabase
+        .from('watchlist')
+        .select('tmdb_id')
+        .eq('user_id', userId)
+        .eq('media_type', 'movie')
+
+      if (error) {
+        console.error('Error fetching watchlist:', error)
+        return
+      }
+
+      const ids = data.map((item: { tmdb_id: number }) => item.tmdb_id)
+      setWatchlistIds(ids)
+    }
+
+    fetchWatchlist()
+  }, [supabase])
 
   const genres = [
     { id: 28, name: 'Action' },
@@ -161,6 +194,45 @@ export default function Upcoming() {
       router.push(`/movie/${selectedMovie.id}`)
     }
   }
+
+  const addToWatchlist = async (movie: MovieOnly) => {
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      toast.error('Please log in to add to watchlist')
+      return
+    }
+
+    setAddingToWatchlist(true)
+
+    const userId = sessionData.session.user.id
+    const tmdbData = { ...movie }
+    const { error } = await supabase.from('watchlist').insert({
+      user_id: userId,
+      tmdb_id: movie?.id,
+      media_type: 'movie',
+      tmdb_data: tmdbData,
+      poster_path: movie?.poster_path,
+      is_seen: false,
+      seen_episodes: {},
+      completed_seasons: [],
+      created_at: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error adding to watchlist:', error)
+      toast.error('Failed to add to watchlist')
+      setAddingToWatchlist(false)
+    } else {
+      toast.success('Added to watchlist successfully')
+      setWatchlistIds((prev) => [...prev, movie.id]) // Update watchlistIds locally
+      setAddingToWatchlist(false)
+    }
+  }
+
+  const isInWatchlist = (movieId: number) => watchlistIds.includes(movieId)
 
   const MovieCardSkeleton = () => (
     <Card className='overflow-hidden p-0'>
@@ -402,7 +474,7 @@ export default function Upcoming() {
 
       {isLoading && (
         <section
-          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 `}
+          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 `}
         >
           {Array.from({ length: 8 }).map((_, i) => (
             <MovieCardSkeleton key={i} />
@@ -432,7 +504,7 @@ export default function Upcoming() {
 
       {!isLoading && !error && filteredMovies && filteredMovies.length > 0 && (
         <section
-          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 `}
+          className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 `}
         >
           {filteredMovies.map((movie: MovieOnly) => (
             <Card
@@ -471,14 +543,6 @@ export default function Upcoming() {
                     }}
                   >
                     View Details
-                  </Button>
-                  <Button
-                    size='sm'
-                    variant='secondary'
-                    className='bg-white/90 hover:bg-white cursor-pointer'
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Plus className='h-3 w-3' />
                   </Button>
                 </div>
               </div>
@@ -583,7 +647,7 @@ export default function Upcoming() {
       )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className='lg:max-w-[500px] h-[70vh] overflow-y-auto scrollbar-hide'>
+        <DialogContent className='lg:max-w-[500px] h-[60vh] overflow-y-auto scrollbar-hide'>
           <DialogHeader>
             <DialogTitle className='text-xl font-bold'>
               {selectedMovie?.title}
@@ -657,11 +721,25 @@ export default function Upcoming() {
                 >
                   View Full Details
                 </Button>
-                <Button variant='outline' size='icon'>
-                  <Plus className='h-4 w-4' />
-                </Button>
-                <Button variant='outline' size='icon'>
-                  <Play className='h-4 w-4' />
+                <Button
+                  variant='outline'
+                  onClick={() => addToWatchlist(selectedMovie)}
+                  size='icon'
+                  disabled={
+                    isInWatchlist(selectedMovie.id) && addingToWatchlist
+                  }
+                >
+                  {isInWatchlist(selectedMovie.id) ? (
+                    <Check className='h-4 w-4' />
+                  ) : (
+                    <div className=''>
+                      {addingToWatchlist ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
+                        <Plus className='h-4 w-4' />
+                      )}
+                    </div>
+                  )}
                 </Button>
               </div>
             </div>

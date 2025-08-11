@@ -506,7 +506,7 @@ export default function MovieDetails() {
                     >
                       {addingToWatchlist ? (
                         <div className='flex items-center gap-2'>
-                          <LoadingSpinner size={20} />
+                          <LoadingSpinner size={20} className='text-white' />
                           <span>Adding...</span>
                         </div>
                       ) : (

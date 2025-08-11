@@ -1,16 +1,17 @@
 'use client'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useWatchlistStore } from '@/lib/store/watchlistStore'
+import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
-import { Movie } from '@/types/movie'
+import type { Movie } from '@/types/movie'
 import { format, isAfter, parseISO } from 'date-fns'
 import {
-  Bell,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Info,
   Plus,
   Star,
@@ -18,35 +19,44 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import useSWR from 'swr'
 
-const mockNotifications = [
-  {
-    message: "New episode of 'The Bear' drops tomorrow",
-    time: '2 hours ago',
-    type: 'episode',
-    isRead: false,
-  },
-  {
-    message: "Your watchlist item 'Dune 2' is now available",
-    time: '1 day ago',
-    type: 'available',
-    isRead: false,
-  },
-  {
-    message: "Reminder: 'Stranger Things' finale airs tonight",
-    time: '3 days ago',
-    type: 'reminder',
-    isRead: true,
-  },
-]
-
 export default function HomePageComp() {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const supabase = createClient()
   const [topRated, setTopRated] = useState<Movie[] | null>(null)
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[] | null>(null)
   const [moviesList, setMoviesList] = useState<Movie[] | null>(null)
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([])
+
+  const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
+
+  // Fetch watchlist
+  useEffect(() => {
+    const fetchWatchlist = async () => {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession()
+      if (sessionError || !sessionData.session) return
+
+      const userId = sessionData.session.user.id
+      const { data, error } = await supabase
+        .from('watchlist')
+        .select('tmdb_id')
+        .eq('user_id', userId)
+        .eq('media_type', 'movie')
+
+      if (error) {
+        console.error('Error fetching watchlist:', error)
+        return
+      }
+
+      const ids = data.map((item: { tmdb_id: number }) => item.tmdb_id)
+      setWatchlistIds(ids)
+    }
+
+    fetchWatchlist()
+  }, [supabase])
 
   const {} = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/tv/top_rated`,
@@ -89,12 +99,6 @@ export default function HomePageComp() {
     return () => clearInterval(interval)
   }, [moviesList])
 
-  const markAsRead = (index: number) => {
-    setNotifications((prev) =>
-      prev.map((notif, i) => (i === index ? { ...notif, isRead: true } : notif))
-    )
-  }
-
   const nextSlide = () => {
     if (!moviesList) return
     setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 5))
@@ -120,8 +124,48 @@ export default function HomePageComp() {
 
   const heroMovies = moviesList?.slice(0, 5) || []
 
+  const addToWatchlist = async (movie: Movie) => {
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      toast.error('Please log in to add to watchlist')
+      return
+    }
+
+    setAddingToWatchlist(true)
+
+    const userId = sessionData.session.user.id
+    const tmdbData = { ...movie }
+    const { error } = await supabase.from('watchlist').insert({
+      user_id: userId,
+      tmdb_id: movie?.id,
+      media_type: 'movie',
+      tmdb_data: tmdbData,
+      poster_path: movie?.poster_path,
+      is_seen: false,
+      seen_episodes: {},
+      completed_seasons: [],
+      created_at: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error adding to watchlist:', error)
+      toast.error('Failed to add to watchlist')
+      setAddingToWatchlist(false)
+    } else {
+      toast.success('Added to watchlist successfully')
+      setWatchlistIds((prev) => [...prev, movie.id]) // Update watchlistIds locally
+      setAddingToWatchlist(false)
+    }
+  }
+
+  // Check if movie is in watchlist
+  const isInWatchlist = (movieId: number) => watchlistIds.includes(movieId)
+
   return (
-    <div className='space-y-10 pt-5'>
+    <main className='space-y-10 pt-5'>
       {moviesList && moviesList.length > 0 && (
         <section className='relative h-[70vh] overflow-hidden rounded-2xl'>
           <div className='relative w-full h-full'>
@@ -195,9 +239,20 @@ export default function HomePageComp() {
                           </p>
 
                           <div className='flex gap-4'>
-                            <Button size='lg' variant='destructive'>
+                            <Button
+                              size='lg'
+                              variant='destructive'
+                              onClick={() => addToWatchlist(movie)}
+                              disabled={
+                                addingToWatchlist || isInWatchlist(movie.id)
+                              }
+                            >
                               <Plus className='h-5 w-5' />
-                              Add to Watchlist
+                              {addingToWatchlist
+                                ? 'Adding...'
+                                : isInWatchlist(movie.id)
+                                ? 'Added to Watchlist'
+                                : 'Add to Watchlist'}
                             </Button>
                             <Button
                               size='lg'
@@ -433,66 +488,7 @@ export default function HomePageComp() {
             </div>
           </section>
         )}
-
-        {/* Notifications Section */}
-        <section>
-          <div className='flex items-center justify-between mb-6'>
-            <h2 className='text-xl font-bold flex items-center gap-2'>
-              <Bell className='h-6 w-6 text-primary' />
-              Notifications
-              {notifications.filter((n) => !n.isRead).length > 0 && (
-                <Badge variant='destructive' className='rounded-full'>
-                  {notifications.filter((n) => !n.isRead).length}
-                </Badge>
-              )}
-            </h2>
-            <Button variant='ghost' size='sm'>
-              Mark All Read
-            </Button>
-          </div>
-          <div className='space-y-3'>
-            {notifications.map((notification, i) => (
-              <Card
-                key={i}
-                className={`transition-all duration-200 cursor-pointer hover:shadow-md ${
-                  !notification.isRead ? 'border-primary/50 bg-primary/5' : ''
-                }`}
-                onClick={() => markAsRead(i)}
-              >
-                <CardContent className='p-4'>
-                  <div className='flex items-start gap-3'>
-                    <div
-                      className={`h-2 w-2 rounded-full mt-2 ${
-                        !notification.isRead ? 'bg-primary' : 'bg-muted'
-                      }`}
-                    />
-                    <div className='flex-1 space-y-2'>
-                      <p
-                        className={`text-sm ${
-                          !notification.isRead
-                            ? 'font-medium'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {notification.message}
-                      </p>
-                      <div className='flex items-center gap-2'>
-                        <Clock className='h-3 w-3 text-muted-foreground' />
-                        <span className='text-xs text-muted-foreground'>
-                          {notification.time}
-                        </span>
-                        <Badge variant='outline' className='text-xs capitalize'>
-                          {notification.type}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
       </div>
-    </div>
+    </main>
   )
 }

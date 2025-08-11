@@ -468,7 +468,10 @@ export default function Discover() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side='right' className='w-[400px] sm:w-[540px]'>
+              <SheetContent
+                side='right'
+                className='w-[400px] h-[calc(100%-theme(space.16))] sm:w-[540px]'
+              >
                 <SheetHeader>
                   <SheetTitle>
                     Filter {mediaType === 'movie' ? 'Movies' : 'TV Shows'}
@@ -478,7 +481,7 @@ export default function Discover() {
                     discovery experience
                   </SheetDescription>
                 </SheetHeader>
-                <div className='mt-6'>
+                <div className='p-4'>
                   <FilterSection />
                 </div>
               </SheetContent>

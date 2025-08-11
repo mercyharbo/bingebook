@@ -403,7 +403,7 @@ export default function Upcoming() {
               </SheetTrigger>
               <SheetContent
                 side='right'
-                className='w-[400px] h-dvh pb-[3rem] p-5'
+                className='w-[400px] h-[calc(100%-theme(space.16))] pb-[3rem] p-5'
               >
                 <SheetHeader className='p-0'>
                   <SheetTitle>Filter Movies</SheetTitle>

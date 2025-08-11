@@ -417,26 +417,6 @@ export default function WatchlistPage() {
         ))}
       </div>
 
-      <Card className='p-4'>
-        <div className='flex flex-col sm:flex-row gap-4'>
-          <div className='space-y-2'>
-            <h3 className='text-lg font-semibold'>Watchlist Stats</h3>
-            <p className='text-sm text-gray-600 dark:text-gray-400'>
-              Total Items: {stats.totalItems}
-            </p>
-            <p className='text-sm text-gray-600 dark:text-gray-400'>
-              Total Hours: {stats.totalHours}h
-            </p>
-            <p className='text-sm text-gray-600 dark:text-gray-400'>
-              Completed: {stats.completedItems}
-            </p>
-            <p className='text-sm text-gray-600 dark:text-gray-400'>
-              Currently Watching: {stats.currentlyWatching}
-            </p>
-          </div>
-        </div>
-      </Card>
-
       {filteredItems.length === 0 ? (
         <EmptyState />
       ) : (
@@ -545,7 +525,6 @@ export default function WatchlistPage() {
                           </DialogDescription>
                         </DialogHeader>
                         <div className='flex gap-2 justify-end'>
-                         
                           <Button
                             variant='destructive'
                             onClick={() => removeFromWatchlist(item.id)}

@@ -46,7 +46,6 @@ import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import { toast } from 'react-toastify'
-import { WatchlistItem } from '../../watchlist/page'
 
 interface TVShowDetails {
   id: number
@@ -174,6 +173,8 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
   )
   const episodes: Episode[] = seasonData?.episodes || []
 
+  const { watchlistItem } = useWatchlistStore()
+
   const hasEpisodeAired = (airDate: string | null) => {
     if (!airDate) return false
     const currentDate = new Date('2025-08-06T00:49:00+01:00')
@@ -300,7 +301,10 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
               </p>
             )}
             <p className='text-xs sm:text-sm text-muted-foreground'>
-              Progress: 0/{season.episode_count} episodes watched
+              Progress:{' '}
+              {watchlistItem?.seen_episodes[`season_${season.season_number}`]
+                ?.length || 0}
+              /{season.episode_count} episodes watched
             </p>
             <p className='text-xs sm:text-sm text-muted-foreground line-clamp-3'>
               {season.overview || 'No overview available for this season.'}
@@ -318,7 +322,7 @@ export default function TVShowDetails() {
   const supabase = createClient()
   const tvId = params.id as string
 
-  const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
+  // const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
 
   const {
     setAddingToWatchlist,
@@ -327,6 +331,8 @@ export default function TVShowDetails() {
     setIsRemovingFromWatchlist,
     isLoadingWatchlist,
     setIsLoadingWatchlist,
+    watchlistItem,
+    setWatchlistItem,
   } = useWatchlistStore()
 
   // Fetch TV show details
@@ -398,7 +404,7 @@ export default function TVShowDetails() {
           console.error('Error fetching watchlist:', error)
           toast.error('Failed to load watchlist')
         } else {
-          setWatchlistItem(data || null)
+          setWatchlistItem(data)
         }
       } catch (error) {
         console.error('Unexpected error:', error)
@@ -408,7 +414,7 @@ export default function TVShowDetails() {
       }
     }
     if (tvShow) fetchWatchlist()
-  }, [tvShow, supabase, tvId, setIsLoadingWatchlist])
+  }, [tvShow, supabase, tvId, setIsLoadingWatchlist, setWatchlistItem])
 
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
   const crew: Crew[] = credits?.crew || []

@@ -12,8 +12,8 @@ interface WatchlistState {
   setIsRemovingFromWatchlist: (removing: boolean) => void
   isLoadingWatchlist: boolean
   setIsLoadingWatchlist: (loading: boolean) => void
-  watchlistItem: WatchlistItem[] | null
-  setWatchlistItem: (items: WatchlistItem[] | null) => void
+  watchlistItem: WatchlistItem | null
+  setWatchlistItem: (items: WatchlistItem | null) => void
   isAddingEpisode: boolean
   setIsAddingEpisode: (adding: boolean) => void
   isRemovingEpisode: boolean

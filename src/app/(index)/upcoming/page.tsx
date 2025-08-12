@@ -234,6 +234,10 @@ export default function Upcoming() {
 
   const isInWatchlist = (movieId: number) => watchlistIds.includes(movieId)
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   const MovieCardSkeleton = () => (
     <Card className='overflow-hidden p-0'>
       <Skeleton className='w-full h-48' />

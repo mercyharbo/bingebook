@@ -148,6 +148,10 @@ export default function WatchlistPage() {
     setCurrentPage(1)
   }, [activeFilter, searchQuery, sortBy])
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   const filters = [
     { id: 'all', label: 'All', count: watchlistItems.length },
     {
@@ -301,40 +305,6 @@ export default function WatchlistPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
-
-  const stats = {
-    totalItems: watchlistItems.length,
-    totalHours: watchlistItems
-      .reduce(
-        (sum, item) =>
-          sum +
-          (item.media_type === 'movie'
-            ? 2
-            : ((item.tmdb_data.episode_run_time?.[0] || 45) *
-                (item.tmdb_data.number_of_episodes || 1)) /
-              60),
-        0
-      )
-      .toFixed(1),
-    completedItems: watchlistItems.filter(
-      (item) =>
-        item.is_seen ||
-        (item.media_type === 'tv' &&
-          Object.values(item.seen_episodes).reduce(
-            (sum: number, eps: string[]) => sum + eps.length,
-            0
-          ) === item.tmdb_data.number_of_episodes)
-    ).length,
-    currentlyWatching: watchlistItems.filter(
-      (item) =>
-        item.media_type === 'tv' &&
-        Object.keys(item.seen_episodes).length > 0 &&
-        Object.values(item.seen_episodes).reduce(
-          (sum: number, eps: string[]) => sum + eps.length,
-          0
-        ) < (item.tmdb_data.number_of_episodes || Infinity)
-    ).length,
-  }
 
   const EmptyState = () => (
     <div className='flex flex-col items-center justify-center py-16 px-4 space-y-3'>

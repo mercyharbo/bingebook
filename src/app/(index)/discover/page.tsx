@@ -407,20 +407,24 @@ export default function Discover() {
     }
   }
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   return (
     <main className='flex flex-col gap-6 w-full p-5 mx-auto lg:p-10'>
       {/* Header */}
-      <header className='flex flex-col gap-4'>
+      <header className='flex flex-col gap-5'>
         <div className='flex items-center justify-between'>
-          <h1 className='text-3xl font-bold flex items-center gap-2'>
+          <h1 className='text-2xl font-bold flex items-center gap-2'>
             <Clock className='h-8 w-8 text-primary' />
-            {mediaType === 'movie' ? 'Upcoming Movies' : 'Upcoming TV Shows'}
+            {mediaType === 'movie' ? 'Discover Movies' : 'Discover TV Shows'}
           </h1>
         </div>
 
         {/* Search and Filters */}
         <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-          <div className='relative flex-1 w-full lg:w-auto'>
+          <div className='relative flex-1 w-full lg:w-[60%]'>
             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
               placeholder={`Search upcoming ${
@@ -428,7 +432,7 @@ export default function Discover() {
               }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-10 w-full h-12 lg:w-auto'
+              className='pl-10 w-full h-12 lg:w-[60%]'
             />
           </div>
 
@@ -438,7 +442,7 @@ export default function Discover() {
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value)}
               >
-                <SelectTrigger className='w-[180px]'>
+                <SelectTrigger className='w-[180px] py-2'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

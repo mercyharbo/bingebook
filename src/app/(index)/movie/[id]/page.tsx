@@ -448,7 +448,14 @@ export default function MovieDetails() {
                   <div className='flex items-center gap-2'>
                     <Calendar className='h-4 w-4' />
                     <span className='text-sm sm:text-base'>
-                      {new Date(movie.release_date).getFullYear()}
+                      {new Date(movie.release_date).toLocaleDateString(
+                        'en-US',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
+                      )}
                     </span>
                   </div>
                 </div>
@@ -690,16 +697,12 @@ export default function MovieDetails() {
                         >
                           <CardContent className='p-1 space-y-2'>
                             <div className='aspect-video bg-gray-100 rounded-lg relative overflow-hidden'>
-                              <Image
-                                src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
-                                alt={video.name}
-                                fill
-                                className='object-cover w-full'
-                                sizes='(max-width: 640px) 100vw, 50vw'
+                              <iframe
+                                src={`https://www.youtube.com/embed/${video.key}`}
+                                title={video.name}
+                                className='w-full h-full rounded-lg'
+                                allowFullScreen
                               />
-                              <div className='absolute inset-0 flex items-center justify-center bg-black/20'>
-                                <Play className='h-10 w-10 sm:h-12 sm:w-12 text-white' />
-                              </div>
                             </div>
                             <div className='space-y-1 p-2'>
                               <h4 className='font-semibold text-sm sm:text-base'>

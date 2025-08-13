@@ -349,23 +349,23 @@ export default function Upcoming() {
 
   return (
     <main className='flex flex-col gap-6 w-full p-5 md:w-full lg:w-full xl:w-full 2xl::w-[90%] mx-auto lg:p-10'>
-      <header className='flex flex-col gap-4'>
+      <header className='flex flex-col gap-5'>
         <div className='flex items-center justify-between'>
-          <h1 className='text-3xl font-bold flex items-center gap-2'>
-            <Clock className='h-8 w-8 text-primary' />
+          <h1 className='text-2xl font-semibold flex items-center gap-2'>
+            <Clock className='h-5 w-5 text-primary' />
             Upcoming Movies
           </h1>
         </div>
 
         {/* Search and Filters */}
-        <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-          <div className='relative flex-1 w-full lg:max-w-md'>
+        <div className='flex flex-col lg:flex-row lg:justify-between gap-4 items-start lg:items-center'>
+          <div className='relative flex-1 w-full lg:max-w-4xl'>
             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
               placeholder='Search upcoming movies...'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-10 w-full h-12 lg:w-auto'
+              className='pl-10 w-full h-12 lg:w-[60%]'
             />
           </div>
 

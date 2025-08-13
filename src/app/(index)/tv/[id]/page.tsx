@@ -177,7 +177,7 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
 
   const hasEpisodeAired = (airDate: string | null) => {
     if (!airDate) return false
-    const currentDate = new Date('2025-08-06T00:49:00+01:00')
+    const currentDate = new Date()
     const episodeDate = new Date(airDate)
     return episodeDate <= currentDate
   }
@@ -265,7 +265,11 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
                                     Aired:{' '}
                                     {new Date(
                                       episode.air_date
-                                    ).toLocaleDateString()}
+                                    ).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                    })}
                                   </p>
                                 )}
                                 <p className='text-xs text-muted-foreground line-clamp-2'>
@@ -297,7 +301,12 @@ function SeasonCard({ season, tvId }: SeasonCardProps) {
             </div>
             {season.air_date && (
               <p className='text-xs sm:text-sm text-muted-foreground'>
-                Aired: {new Date(season.air_date).getFullYear()}
+                Aired:{' '}
+                {new Date(season.air_date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </p>
             )}
             <p className='text-xs sm:text-sm text-muted-foreground'>
@@ -942,7 +951,13 @@ export default function TVShowDetails() {
                         >
                           <CardContent className='p-1 space-y-2'>
                             <div className='aspect-video bg-gray-100 rounded-lg relative overflow-hidden'>
-                              <Image
+                              <iframe
+                                src={`https://www.youtube.com/embed/${video.key}`}
+                                title={video.name}
+                                className='w-full h-full rounded-lg'
+                                allowFullScreen
+                              />
+                              {/* <Image
                                 src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
                                 alt={video.name}
                                 fill
@@ -951,7 +966,7 @@ export default function TVShowDetails() {
                               />
                               <div className='absolute inset-0 flex items-center justify-center bg-black/20'>
                                 <Play className='h-10 w-10 sm:h-12 sm:w-12 text-white' />
-                              </div>
+                              </div> */}
                             </div>
                             <div className='space-y-1 p-2'>
                               <h4 className='font-semibold text-sm sm:text-base'>

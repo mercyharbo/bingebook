@@ -193,8 +193,8 @@ export default function TVProgressTracker({
                     className='text-xs'
                   >
                     {isLoadingEpisode ? (
-                      <div className='flex items-center gap-2'>
-                        <LoadingSpinner size={20} />
+                      <div className='flex justify-center items-center gap-1'>
+                        <LoadingSpinner size={17} />
                         {episodeCode}
                       </div>
                     ) : (

@@ -2,6 +2,7 @@
 
 import { useDebounce } from '@/hooks/use-debounce'
 import { useAuthStore } from '@/lib/store/authStore'
+import { useSearchStore } from '@/lib/store/searchStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import { ChevronDown, Menu, Search, Tv, X } from 'lucide-react'
@@ -14,17 +15,26 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
+import { toast } from 'react-toastify'
 
 export default function NavHeader() {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
   const searchRef = useRef<HTMLDivElement>(null)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showResults, setShowResults] = useState(false)
+
   const [loading, setLoading] = useState(true)
-  const [toggleMenu, setToggleMenu] = useState<boolean>(false)
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    toggleMenu,
+    setToggleMenu,
+    showResults,
+    setShowResults,
+    isSearchOpen,
+    setIsSearchOpen,
+  } = useSearchStore()
 
   const debouncedSearch = useDebounce(searchQuery, 500)
 
@@ -87,7 +97,7 @@ export default function NavHeader() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [])
+  }, [setShowResults])
 
   const { data: searchResults } = useSWR(
     debouncedSearch
@@ -129,7 +139,7 @@ export default function NavHeader() {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-      console.error('Error signing out:', error.message)
+      toast.error(`Error signing out: ${error.message}`)
     }
 
     clearUser()
@@ -207,6 +217,7 @@ export default function NavHeader() {
                   handleViewAllResults()
                   setShowResults(false)
                 }}
+                
               />
             </div>
           )}
@@ -343,12 +354,14 @@ export default function NavHeader() {
               >
                 Upcoming
               </Link>
-              {loading ? (
-                <div className='h-6 w-20 animate-pulse bg-gray-200 rounded' />
-              ) : (
+              {!user && (
                 <Link
                   href='/auth/login'
-                  className='text-lg font-medium transition-colors hover:text-primary'
+                  className={`text-lg font-medium transition-colors ${
+                    isActive('/auth/login')
+                      ? 'text-primary font-semibold'
+                      : 'hover:text-primary'
+                  }`}
                 >
                   Sign In
                 </Link>

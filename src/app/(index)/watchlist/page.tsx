@@ -395,7 +395,7 @@ export default function WatchlistPage() {
             {paginatedItems.map((item) => (
               <Card
                 key={item.id}
-                className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2'
+                className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2 gap-2'
               >
                 <div className='relative'>
                   <Image
@@ -411,7 +411,7 @@ export default function WatchlistPage() {
                     }
                     width={200}
                     height={300}
-                    className='object-cover group-hover:scale-105 transition-transform duration-300 w-full h-72'
+                    className='object-cover rounded-t-lg group-hover:scale-105 transition-transform duration-300 w-full h-72'
                   />
                   <div className='absolute top-2 right-2 flex flex-row gap-2'>
                     <Badge
@@ -457,14 +457,14 @@ export default function WatchlistPage() {
                       </span>
                     </Badge>
                     <Badge variant='secondary' className='text-xs'>
-                      {item.media_type === 'movie' ? 'Movie' : 'Series'}
+                      {item.media_type === 'movie' ? 'Movie' : 'TV'}
                     </Badge>
                   </div>
-                  <div className='absolute bottom-2 right-0 opacity-0 lg:group-hover:opacity-100 transition-opacity flex items-center gap-2 w-full'>
+                  <div className='absolute bottom-2 right-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center items-center gap-2 w-full'>
                     <Button
                       variant={'outline'}
                       size='sm'
-                      className='h-10 px-2 w-[80%] bg-black/40 text-white hover:bg-black/80 hover:text-white'
+                      className='h-10 px-2 w-[80%] bg-black/50 text-white hover:bg-black/80 hover:text-white'
                       asChild
                     >
                       <Link href={`/${item.media_type}/${item.tmdb_id}`}>
@@ -515,22 +515,26 @@ export default function WatchlistPage() {
                   </div>
                 </div>
 
-                <CardContent className='space-y-3'>
-                  <div>
+                <CardContent className='space-y-3 px-0'>
+                  <div className='space-y-2'>
                     <h1 className='font-semibold text-lg line-clamp-1'>
                       {item.media_type === 'movie'
                         ? item.tmdb_data.title || 'Untitled Movie'
                         : item.tmdb_data.name || 'Untitled Series'}
                     </h1>
-                    <div className='flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400'>
+                    <div className='flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400'>
                       <div className='space-x-1 flex items-center'>
                         <Calendar className='h-3 w-3' />
                         <span>
                           {new Date(
                             item.media_type === 'movie'
-                              ? item.tmdb_data.release_date || '1970-01-01'
-                              : item.tmdb_data.first_air_date || '1970-01-01'
-                          ).getFullYear()}
+                              ? item.tmdb_data.release_date || ''
+                              : item.tmdb_data.first_air_date || ''
+                          ).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
                         </span>
                       </div>
                       <div className='space-x-1 flex items-center'>

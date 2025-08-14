@@ -432,7 +432,7 @@ export default function Discover() {
               }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-10 w-full h-12 lg:w-[60%]'
+              className='pl-10 w-full lg:w-[60%]'
             />
           </div>
 

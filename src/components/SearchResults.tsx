@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchStore } from '@/lib/store/searchStore'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Badge } from './ui/badge'
@@ -27,6 +28,7 @@ export default function SearchResults({
   onViewAll,
 }: SearchResultsProps) {
   const router = useRouter()
+  const { setShowResults } = useSearchStore()
 
   const getMediaType = (item: SearchResult): 'movie' | 'tv' | 'person' => {
     if (item.title && item.release_date) return 'movie'
@@ -39,6 +41,7 @@ export default function SearchResults({
     const mediaType = getMediaType(item)
     const path = `/${mediaType}/${item.id}`
     router.push(path)
+    setShowResults(false)
   }
 
   const getMediaTypeColor = (item: SearchResult) => {

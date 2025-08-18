@@ -9,13 +9,13 @@ import { ChevronDown, Menu, Search, Tv, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'react-toastify'
 import useSWR from 'swr'
 import SearchResults from './SearchResults'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
-import { toast } from 'react-toastify'
 
 export default function NavHeader() {
   const router = useRouter()
@@ -281,14 +281,7 @@ export default function NavHeader() {
               >
                 <Link href='/profile'>Profile</Link>
               </Button>
-              <Button
-                variant={'secondary'}
-                onClick={() => setToggleMenu(false)}
-                asChild
-                className='w-full justify-start'
-              >
-                <Link href='/settings'>Settings</Link>
-              </Button>
+
               <Button
                 variant={'secondary'}
                 onClick={handleUserSignout}

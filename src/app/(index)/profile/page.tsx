@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
@@ -209,13 +210,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className='min-h-screen p-5 lg:p-10 dark:bg-background space-y-5'>
-      <header className='h-48 bg-gradient-to-r from-black via-black to-blue-600 rounded-2xl relative overflow-hidden'>
-     
-        <div className='absolute bottom-10 left-6 right-6'>
-          <div className='flex items-center gap-6'>
+    <main className='min-h-screen flex flex-col gap-5 pb-8 dark:bg-background'>
+      <header className='relative bg-white dark:bg-gray-900'>
+        <div className='container mx-auto px-4 py-8 grid place-items-center'>
+          <div className='flex flex-col items-center gap-4'>
             <div className='relative'>
-              <Avatar className='h-24 w-24 shadow-xl'>
+              <Avatar className='h-28 w-28 ring-4 ring-white dark:ring-gray-800 shadow-xl'>
                 {avatarUrl && (
                   <AvatarImage
                     src={avatarUrl || '/placeholder.svg'}
@@ -223,59 +223,81 @@ export default function ProfilePage() {
                     className='object-cover object-top'
                   />
                 )}
-                <AvatarFallback className='text-2xl bg-white text-gray-900 font-bold'>
+                <AvatarFallback className='text-3xl bg-gray-500 text-white font-bold'>
                   {getInitials(fullName, user?.email)}
                 </AvatarFallback>
               </Avatar>
-              <div className='absolute -bottom-0 -right-0 bg-white rounded-full p-1 shadow-lg'>
-                <Camera className='h-4 w-4 text-gray-600' />
+              <div className='absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg ring-2 ring-white dark:ring-gray-800'>
+                <Camera className='h-4 w-4 text-gray-600 dark:text-gray-400' />
               </div>
             </div>
-            <div className='text-white space-y-1'>
-              <h1 className='text-3xl font-bold'>{fullName || 'User'}</h1>
-              <p className='text-white/90 flex items-center gap-2'>
-                <Mail className='h-4 w-4' />
-                {user?.email}
-              </p>
-              <p className='text-white/80 text-sm mt-1 flex items-center gap-2'>
-                <Calendar className='h-4 w-4' />
-                Member since {new Date(userStats.joinDate).toLocaleDateString()}
-              </p>
+            <div className='space-y-3 text-center'>
+              <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>
+                {fullName || 'User'}
+              </h1>
+              <div className='flex flex-col sm:flex-row items-center gap-1 lg:gap-4 text-gray-600 dark:text-gray-400'>
+                <span className='flex items-center gap-2'>
+                  <Mail className='h-4 w-4' />
+                  {user?.email}
+                </span>
+                <span className='hidden sm:inline text-gray-300 dark:text-gray-600'>
+                  •
+                </span>
+                <span className='flex items-center gap-2'>
+                  <Calendar className='h-4 w-4' />
+                  Member since{' '}
+                  {new Date(userStats.joinDate).toLocaleDateString()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <Tabs defaultValue='profile' className='space-y-6'>
-        <TabsList className='grid w-full grid-cols-4 h-12'>
-          <TabsTrigger value='profile' className='flex items-center gap-2'>
+      <Separator />
+
+      <Tabs defaultValue='profile' className='container mx-auto space-y-5 px-5'>
+        <TabsList className='w-full h-12 grid grid-cols-4 rounded-xl p-1 bg-gray-100/80 dark:bg-gray-800/50 backdrop-blur sticky top-0 z-10'>
+          <TabsTrigger
+            value='profile'
+            className='flex items-center gap-2 rounded-lg'
+          >
             <UserCircle className='w-4 h-4' />
             <span className='hidden sm:inline'>Profile</span>
           </TabsTrigger>
-          <TabsTrigger value='preferences' className='flex items-center gap-2'>
+          <TabsTrigger
+            value='preferences'
+            className='flex items-center gap-2 rounded-lg'
+          >
             <Palette className='w-4 h-4' />
             <span className='hidden sm:inline'>Preferences</span>
           </TabsTrigger>
-          <TabsTrigger value='privacy' className='flex items-center gap-2'>
+          <TabsTrigger
+            value='privacy'
+            className='flex items-center gap-2 rounded-lg'
+          >
             <Shield className='w-4 h-4' />
             <span className='hidden sm:inline'>Privacy</span>
           </TabsTrigger>
-          <TabsTrigger value='settings' className='flex items-center gap-2'>
+          <TabsTrigger
+            value='settings'
+            className='flex items-center gap-2 rounded-lg'
+          >
             <Lock className='w-4 h-4' />
             <span className='hidden sm:inline'>Settings</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value='profile'>
+        <TabsContent value='profile' className=''>
           <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
             <div className='lg:col-span-2'>
-              <Card className='shadow-lg'>
-                <CardHeader>
-                  <CardTitle className='flex items-center gap-2'>
+              <Card className='overflow-hidden border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm'>
+                <CardHeader className='border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50'>
+                  <CardTitle className='flex items-center gap-2 text-gray-900 dark:text-white'>
                     <User className='h-5 w-5' />
                     Profile Information
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className='text-gray-600 dark:text-gray-400'>
                     Update your profile information and how others see you on
                     the platform.
                   </CardDescription>
@@ -408,61 +430,79 @@ export default function ProfilePage() {
 
             {/* Sidebar */}
             <div className='space-y-6'>
-              <Card className='shadow-lg'>
-                <CardHeader>
-                  <CardTitle className='flex items-center gap-2'>
+              <Card className='overflow-hidden border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-4'>
+                <CardHeader className='border-b border-gray-200 dark:border-gray-800'>
+                  <CardTitle className='flex items-center gap-2 text-gray-900 dark:text-white'>
                     <Users className='h-5 w-5' />
                     Social Stats
                   </CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-4'>
-                  <div className='flex justify-between items-center'>
-                    <span className='text-sm text-muted-foreground'>
+                <CardContent className='grid grid-cols-2 gap-4 p-2'>
+                  <div className='flex flex-col items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50'>
+                    <span className='text-2xl font-bold text-gray-900 dark:text-white'>
+                      {userStats.followers}
+                    </span>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
                       Followers
                     </span>
-                    <Badge variant='secondary'>{userStats.followers}</Badge>
                   </div>
-                  <div className='flex justify-between items-center'>
-                    <span className='text-sm text-muted-foreground'>
+                  <div className='flex flex-col items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50'>
+                    <span className='text-2xl font-bold text-gray-900 dark:text-white'>
+                      {userStats.following}
+                    </span>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
                       Following
                     </span>
-                    <Badge variant='secondary'>{userStats.following}</Badge>
                   </div>
-                  <div className='flex justify-between items-center'>
-                    <span className='text-sm text-muted-foreground'>
+                  <div className='flex flex-col items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50'>
+                    <span className='text-2xl font-bold text-gray-900 dark:text-white'>
+                      {userStats.totalHours}h
+                    </span>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
                       Total Hours
                     </span>
-                    <Badge variant='outline'>{userStats.totalHours}h</Badge>
                   </div>
-                  <div className='flex justify-between items-center'>
-                    <span className='text-sm text-muted-foreground'>
-                      Favorite Genre
-                    </span>
-                    <Badge className='bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'>
+                  <div className='flex flex-col items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50'>
+                    <Badge className='px-3 py-1 text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200'>
                       {userStats.favoriteGenre}
                     </Badge>
+                    <span className='text-sm text-gray-600 dark:text-gray-400 mt-2'>
+                      Favorite Genre
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className='shadow-lg'>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+              <Card className='overflow-hidden border border-gray-200 dark:border-gray-800 rounded-xl gap-0 shadow-sm'>
+                <CardHeader className='border-b border-gray-200 dark:border-gray-800'>
+                  <CardTitle className='text-gray-900 dark:text-white'>
+                    Quick Actions
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-3'>
-                  <Button variant='outline' className='w-full justify-between'>
-                    <span className='flex items-center gap-2'>
-                      <Download className='h-4 w-4' />
+                <CardContent className='p-4 space-y-2'>
+                  <Button
+                    variant='ghost'
+                    className='w-full justify-between h-12 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  >
+                    <span className='flex items-center gap-3'>
+                      <div className='rounded-lg bg-blue-100 dark:bg-blue-900/50 p-2'>
+                        <Download className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+                      </div>
                       Export Data
                     </span>
-                    <ChevronRight className='h-4 w-4' />
+                    <ChevronRight className='h-4 w-4 text-gray-400' />
                   </Button>
-                  <Button variant='outline' className='w-full justify-between'>
-                    <span className='flex items-center gap-2'>
-                      <Eye className='h-4 w-4' />
+                  <Button
+                    variant='ghost'
+                    className='w-full justify-between h-12 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  >
+                    <span className='flex items-center gap-3'>
+                      <div className='rounded-lg bg-purple-100 dark:bg-purple-900/50 p-2'>
+                        <Eye className='h-4 w-4 text-purple-600 dark:text-purple-400' />
+                      </div>
                       View Public Profile
                     </span>
-                    <ChevronRight className='h-4 w-4' />
+                    <ChevronRight className='h-4 w-4 text-gray-400' />
                   </Button>
                 </CardContent>
               </Card>

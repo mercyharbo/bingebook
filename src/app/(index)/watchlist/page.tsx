@@ -522,7 +522,7 @@ export default function WatchlistPage() {
                         ? item.tmdb_data.title || 'Untitled Movie'
                         : item.tmdb_data.name || 'Untitled Series'}
                     </h1>
-                    <div className='flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400'>
+                    <div className='flex justify-between items-center gap-3 text-sm text-gray-600 dark:text-gray-400'>
                       <div className='space-x-1 flex items-center'>
                         <Calendar className='h-3 w-3' />
                         <span>

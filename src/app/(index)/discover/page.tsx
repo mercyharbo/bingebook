@@ -585,7 +585,7 @@ export default function Discover() {
           {filteredMedia.map((item: Movie) => (
             <Card
               key={item.id}
-              className={`group p-0 hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer `}
+              className={`group p-0 gap-2 hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer `}
             >
               <div className={`relative `}>
                 <Image

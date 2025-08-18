@@ -1,9 +1,8 @@
-// This is a full root layout, not just a section wrapper
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Login | BingeBook',
-  description: 'Sign in to your BingeBook account',
+  title: 'Login | ShowTrackr',
+  description: 'Sign in to your ShowTrackr account',
 }
 
 export default function AuthLayout({ children }: { children: ReactNode }) {

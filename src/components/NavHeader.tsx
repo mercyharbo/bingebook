@@ -162,7 +162,7 @@ export default function NavHeader() {
         }`}
       >
         <Tv />
-        BingeBook
+        ShowTrackr
       </Link>
 
       <div className='hidden md:flex items-center gap-8'>
@@ -217,7 +217,6 @@ export default function NavHeader() {
                   handleViewAllResults()
                   setShowResults(false)
                 }}
-                
               />
             </div>
           )}
@@ -318,7 +317,7 @@ export default function NavHeader() {
               }`}
             >
               <Tv />
-              BingeBook
+              ShowTrackr
             </Link>
 
             <div className='flex flex-col gap-6 pt-[3rem] px-5'>

@@ -211,7 +211,7 @@ export default function ProfilePage() {
   return (
     <main className='min-h-screen p-5 lg:p-10 dark:bg-background space-y-5'>
       <header className='h-48 bg-gradient-to-r from-black via-black to-blue-600 rounded-2xl relative overflow-hidden'>
-        <div className='absolute inset-0 bg-black/20' />
+     
         <div className='absolute bottom-10 left-6 right-6'>
           <div className='flex items-center gap-6'>
             <div className='relative'>

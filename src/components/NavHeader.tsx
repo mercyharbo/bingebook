@@ -24,6 +24,7 @@ export default function NavHeader() {
   const searchRef = useRef<HTMLDivElement>(null)
 
   const [loading, setLoading] = useState(true)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
   const {
     searchQuery,
@@ -99,6 +100,27 @@ export default function NavHeader() {
     }
   }, [setShowResults])
 
+  useEffect(() => {
+    function handleProfileMenuClickOutside(event: MouseEvent) {
+      const target = event.target as Element
+      // Check if the click is outside the profile menu and not on the avatar button
+      if (
+        profileMenuOpen &&
+        !target.closest('[data-profile-menu]') &&
+        !target.closest('[data-profile-trigger]')
+      ) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleProfileMenuClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleProfileMenuClickOutside)
+      }
+    }
+  }, [profileMenuOpen])
+
   const { data: searchResults } = useSWR(
     debouncedSearch
       ? `${
@@ -143,7 +165,7 @@ export default function NavHeader() {
     }
 
     clearUser()
-    setToggleMenu(false)
+    setProfileMenuOpen(false)
     router.refresh()
   }
 
@@ -239,7 +261,8 @@ export default function NavHeader() {
             variant={'ghost'}
             size={'icon'}
             className='shadow-none cursor-pointer hover:bg-transparent px-0'
-            onClick={handleToggleMenu}
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            data-profile-trigger
           >
             <Avatar className='h-8 w-8'>
               {user.user_metadata?.avatar_url && (
@@ -270,12 +293,12 @@ export default function NavHeader() {
           </div>
         )}
 
-        {toggleMenu && (
-          <div className='absolute top-full right-0'>
+        {profileMenuOpen && (
+          <div className='absolute top-full right-0' data-profile-menu>
             <div className='flex flex-col justify-start items-start gap-2 bg-white group-hover:cursor-pointer shadow-lg rounded-lg ring-1 ring-gray-300 p-2 w-36'>
               <Button
                 variant={'secondary'}
-                onClick={() => setToggleMenu(false)}
+                onClick={() => setProfileMenuOpen(false)}
                 asChild
                 className='w-full justify-start'
               >

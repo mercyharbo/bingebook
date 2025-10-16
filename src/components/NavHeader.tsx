@@ -169,10 +169,10 @@ export default function NavHeader() {
         {user && (
           <Link
             href='/watchlist'
-            className={`text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               isActive('/watchlist')
-                ? 'text-primary font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
             Watchlist
@@ -180,20 +180,20 @@ export default function NavHeader() {
         )}
         <Link
           href='/discover'
-          className={`text-sm font-medium transition-colors ${
+          className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             isActive('/discover')
-              ? 'text-primary font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
           Discover
         </Link>
         <Link
           href='/upcoming'
-          className={`text-sm font-medium transition-colors ${
+          className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             isActive('/upcoming')
-              ? 'text-primary font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
           Upcoming
@@ -293,7 +293,7 @@ export default function NavHeader() {
           </div>
         )}
 
-        <Sheet>
+        <Sheet open={toggleMenu} onOpenChange={setToggleMenu}>
           <SheetTrigger asChild>
             <Button variant='ghost' size='icon' className='md:hidden'>
               <Menu className='h-4 w-4' />
@@ -303,7 +303,7 @@ export default function NavHeader() {
           <SheetContent side='left' className='sm:w-[80%]'>
             <Link
               href='/'
-              className={`font-bold text-xl px-5 pt-2 lg:text-2xl flex items-center gap-2 transition-colors ${
+              className={`font-bold text-xl px-5 pt-4 lg:text-2xl flex items-center gap-2 transition-colors ${
                 isActive('/')
                   ? 'text-primary font-semibold'
                   : 'text-primary hover:text-primary/80'
@@ -313,47 +313,52 @@ export default function NavHeader() {
               ShowTrackr
             </Link>
 
-            <div className='flex flex-col gap-6 pt-[3rem] px-5'>
+            <div className='flex flex-col gap-3 pt-[3rem] px-5'>
               {user && (
                 <Link
                   href='/watchlist'
-                  className={`text-lg font-medium transition-colors ${
+                  className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                     isActive('/watchlist')
-                      ? 'text-primary font-semibold'
-                      : 'hover:text-primary'
+                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
+                  onClick={() => setToggleMenu(false)}
                 >
                   Watchlist
                 </Link>
               )}
               <Link
                 href='/discover'
-                className={`text-lg font-medium transition-colors ${
+                className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                   isActive('/discover')
-                    ? 'text-primary font-semibold'
-                    : 'hover:text-primary'
+                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
+                onClick={() => setToggleMenu(false)}
               >
                 Discover
               </Link>
               <Link
                 href='/upcoming'
-                className={`text-lg font-medium transition-colors ${
+                className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                   isActive('/upcoming')
-                    ? 'text-primary font-semibold'
-                    : 'hover:text-primary'
+                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
+                onClick={() => setToggleMenu(false)}
               >
                 Upcoming
               </Link>
+
               {!user && (
                 <Link
                   href='/auth/login'
-                  className={`text-lg font-medium transition-colors ${
+                  className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                     isActive('/auth/login')
-                      ? 'text-primary font-semibold'
-                      : 'hover:text-primary'
+                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
+                  onClick={() => setToggleMenu(false)}
                 >
                   Sign In
                 </Link>

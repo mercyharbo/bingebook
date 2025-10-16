@@ -24,22 +24,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination' // Import shadcn Pagination components
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
-import {
-  Calendar,
-  Check,
-  Clock,
-  Eye,
-  Plus,
-  Search,
-  Star,
-  Trash2,
-} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Calendar, Check, Clock, Eye, Search, Star, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
+import EmptyState from './empty-state'
+import WatchlistLoadingSkeleton from './loading-skeleton'
 
 interface TMDBGenre {
   id: number
@@ -152,6 +153,9 @@ export default function WatchlistPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
+  /* The above code is creating an array of filter objects for a watchlist. Each filter object represents
+a different category of items in the watchlist, such as 'All', 'Movies', 'TV Shows', 'Watching',
+'Watched', and 'Planned'. */
   const filters = [
     { id: 'all', label: 'All', count: watchlistItems.length },
     {
@@ -223,6 +227,20 @@ export default function WatchlistPage() {
       console.error('Unexpected error:', error)
       toast.error('An unexpected error occurred')
     }
+  }
+
+  const handleMovieSeenToggle = (watchlistId: number, newStatus: boolean) => {
+    setWatchlistItems((prev) =>
+      prev.map((item) =>
+        item.id === watchlistId
+          ? {
+              ...item,
+              is_seen: newStatus,
+              last_updated: new Date().toISOString(),
+            }
+          : item
+      )
+    )
   }
 
   const filteredItems = watchlistItems
@@ -306,86 +324,88 @@ export default function WatchlistPage() {
     currentPage * itemsPerPage
   )
 
-  const EmptyState = () => (
-    <div className='flex flex-col items-center justify-center py-16 px-4 space-y-3'>
-      <div className='w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center'>
-        <div className='text-6xl'>🍿</div>
-      </div>
-      <h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
-        Your watchlist is empty
-      </h3>
-      <p className='text-gray-600 dark:text-gray-400 text-center max-w-md'>
-        Start building your personal collection of movies and TV shows you want
-        to watch.
-      </p>
-      <Button size='lg' className='bg-blue-600 text-white' asChild>
-        <Link href='/discover'>
-          <Plus className='h-4 w-4' />
-          Start tracking your favorites
-        </Link>
-      </Button>
-    </div>
-  )
-
   if (isLoading) {
-    return (
-      <div className='h-screen overflow-hidden fixed top-0 left-0 w-full z-50 bg-gray-50 dark:bg-gray-900 flex items-center justify-center'>
-        <LoadingSpinner
-          size={60}
-          color='border-gray-900 dark:border-white'
-          // className='p-2'
-        />
-      </div>
-    )
+    return <WatchlistLoadingSkeleton />
   }
 
   return (
     <main className='min-h-screen dark:bg-background p-5 lg:p-10 space-y-5'>
-      <div className='text-center space-y-2'>
-        <h1 className='text-4xl md:text-5xl font-bold text-gray-900 dark:text-white'>
-          Your Watchlist
-        </h1>
-        <p className='text-gray-600 dark:text-gray-400'>
-          Keep track of your movies and TV shows
-        </p>
-      </div>
-
-      <div className='flex flex-col lg:flex-row gap-4'>
-        <div className='relative flex-1'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
-          <Input
-            placeholder='Search watchlist...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className='pl-10 h-12'
-          />
+      <header className='relative flex flex-col justify-center items-center gap-8 py-5 lg:py-8'>
+        {/* Hero Section */}
+        <div className='text-center space-y-4 px-4 max-w-3xl mx-auto'>
+          <div className='inline-flex items-center justify-center size-14 bg-blue-600 rounded-2xl shadow-lg mb-4'>
+            <Eye className='size-6 text-white' />
+          </div>
+          <h1 className='text-3xl font-bold text-gray-900 dark:text-white leading-tight'>
+            Your Watchlist
+          </h1>
+          <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed'>
+            Keep track of your movies and TV shows. Discover, organize, and
+            never miss your favorites.
+          </p>
         </div>
-        <div className='flex gap-2 w-full lg:w-auto'>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className='border border-gray-300 dark:border-gray-700 rounded-md h-12 w-full lg:w-auto px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-          >
-            <option value='added_date'>Sort by Added Date</option>
-            <option value='title'>Sort by Title</option>
-            <option value='release_date'>Sort by Release Date</option>
-            <option value='rating'>Sort by Rating</option>
-          </select>
-        </div>
-      </div>
 
-      <div className='flex flex-wrap gap-2'>
-        {filters.map((filter) => (
-          <Button
-            key={filter.id}
-            variant={activeFilter === filter.id ? 'default' : 'outline'}
-            onClick={() => setActiveFilter(filter.id)}
-            className='text-xs sm:text-sm'
-          >
-            {filter.label} ({filter.count})
-          </Button>
-        ))}
-      </div>
+        {/* Controls Section */}
+        <div className='w-full max-w-4xl mx-auto space-y-6'>
+          {/* Search and Sort */}
+          <div className='flex flex-col lg:flex-row gap-4 max-w-2xl mx-auto'>
+            <div className='relative flex-1'>
+              <Search className='absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400' />
+              <Input
+                placeholder='Search your watchlist...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-12 h-11 text-base border-border dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-xl'
+              />
+            </div>
+            <div className='flex gap-3 w-full lg:w-auto'>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger
+                  size='lg'
+                  className='h-12 w-full lg:w-auto px-4 py-3 text-base border-gray-200 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-xl'
+                >
+                  <SelectValue placeholder='Sort by...' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='added_date'>Sort by Added Date</SelectItem>
+                  <SelectItem value='title'>Sort by Title</SelectItem>
+                  <SelectItem value='release_date'>
+                    Sort by Release Date
+                  </SelectItem>
+                  <SelectItem value='rating'>Sort by Rating</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className='flex flex-wrap justify-center gap-2 sm:gap-3'>
+            {filters.map((filter) => (
+              <Button
+                key={filter.id}
+                variant={activeFilter === filter.id ? 'default' : 'outline'}
+                onClick={() => setActiveFilter(filter.id)}
+                className={`text-sm px-4 py-2.5 h-auto min-h-[40px] rounded-full transition-all duration-200 ${
+                  activeFilter === filter.id
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg transform scale-105'
+                    : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
+                }`}
+              >
+                <span className='font-medium'>{filter.label}</span>
+                <span
+                  className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                    activeFilter === filter.id
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  {filter.count}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      </header>
 
       {filteredItems.length === 0 ? (
         <EmptyState />
@@ -395,7 +415,7 @@ export default function WatchlistPage() {
             {paginatedItems.map((item) => (
               <Card
                 key={item.id}
-                className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2 gap-2'
+                className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2 gap-2 cursor-pointer'
               >
                 <div className='relative'>
                   <Image
@@ -409,25 +429,26 @@ export default function WatchlistPage() {
                         ? item.tmdb_data.title || 'Untitled Movie'
                         : item.tmdb_data.name || 'Untitled Series'
                     }
-                    width={200}
+                    width={500}
                     height={300}
                     className='object-cover rounded-t-lg group-hover:scale-105 transition-transform duration-300 w-full h-72'
                   />
                   <div className='absolute top-2 right-2 flex flex-row gap-2'>
                     <Badge
-                      className={`${
+                      className={cn(
+                        'text-white text-xs rounded-3xl',
                         item.is_seen ||
-                        (item.media_type === 'tv' &&
-                          Object.values(item.seen_episodes).reduce(
-                            (sum: number, eps: string[]) => sum + eps.length,
-                            0
-                          ) === item.tmdb_data.number_of_episodes)
+                          (item.media_type === 'tv' &&
+                            Object.values(item.seen_episodes).reduce(
+                              (sum: number, eps: string[]) => sum + eps.length,
+                              0
+                            ) === item.tmdb_data.number_of_episodes)
                           ? 'bg-green-500 hover:bg-green-600'
                           : item.media_type === 'tv' &&
                             Object.keys(item.seen_episodes).length > 0
                           ? 'bg-blue-500 hover:bg-blue-600'
                           : 'bg-orange-500 hover:bg-orange-600'
-                      } text-white text-xs`}
+                      )}
                     >
                       {item.is_seen ||
                       (item.media_type === 'tv' &&
@@ -435,12 +456,12 @@ export default function WatchlistPage() {
                           (sum: number, eps: string[]) => sum + eps.length,
                           0
                         ) === item.tmdb_data.number_of_episodes) ? (
-                        <Check className='h-3 w-3' />
+                        <Check className='size-3' />
                       ) : item.media_type === 'tv' &&
                         Object.keys(item.seen_episodes).length > 0 ? (
-                        <Eye className='h-3 w-3' />
+                        <Eye className='size-3' />
                       ) : (
-                        <Clock className='h-3 w-3' />
+                        <Clock className='size-3' />
                       )}
                       <span className='ml-1 capitalize'>
                         {item.is_seen ||
@@ -460,15 +481,15 @@ export default function WatchlistPage() {
                       {item.media_type === 'movie' ? 'Movie' : 'TV'}
                     </Badge>
                   </div>
-                  <div className='absolute bottom-2 right-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center items-center gap-2 w-full'>
+                  <div className='absolute bottom-2 right-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center items-center gap-1 sm:gap-2 w-full px-2'>
                     <Button
                       variant={'outline'}
                       size='sm'
-                      className='h-10 px-2 w-[80%] bg-black/50 text-white hover:bg-black/80 hover:text-white'
+                      className='h-8 sm:h-10 px-2 text-xs sm:text-sm flex-1 sm:w-[80%] bg-black/50 text-white hover:bg-black/80 hover:text-white'
                       asChild
                     >
                       <Link href={`/${item.media_type}/${item.tmdb_id}`}>
-                        View Details
+                        <span className=''>View Details</span>
                       </Link>
                     </Button>
                     <Dialog>
@@ -476,9 +497,9 @@ export default function WatchlistPage() {
                         <Button
                           size='sm'
                           variant='destructive'
-                          className='h-10 w-12 p-0'
+                          className='h-8 sm:h-10 w-8 sm:w-12 p-0 flex-shrink-0'
                         >
-                          <Trash2 className='h-3 w-3' />
+                          <Trash2 className='size-3' />
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -515,30 +536,30 @@ export default function WatchlistPage() {
                   </div>
                 </div>
 
-                <CardContent className='space-y-3 px-0'>
-                  <div className='space-y-2'>
-                    <h1 className='font-semibold text-lg line-clamp-1'>
+                <CardContent className='space-y-2 sm:space-y-3 px-2 sm:px-4 pb-4'>
+                  <div className='space-y-1.5 sm:space-y-2'>
+                    <h1 className='font-semibold text-base sm:text-lg line-clamp-1 leading-tight'>
                       {item.media_type === 'movie'
                         ? item.tmdb_data.title || 'Untitled Movie'
                         : item.tmdb_data.name || 'Untitled Series'}
                     </h1>
-                    <div className='flex justify-between items-center gap-3 text-sm text-gray-600 dark:text-gray-400'>
-                      <div className='space-x-1 flex items-center'>
-                        <Calendar className='h-3 w-3' />
-                        <span>
+                    <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                      <div className='flex items-center gap-1'>
+                        <Calendar className='size-3 flex-shrink-0' />
+                        <span className='truncate'>
                           {new Date(
                             item.media_type === 'movie'
                               ? item.tmdb_data.release_date || ''
                               : item.tmdb_data.first_air_date || ''
                           ).toLocaleDateString('en-US', {
                             year: 'numeric',
-                            month: 'long',
+                            month: 'short',
                             day: 'numeric',
                           })}
                         </span>
                       </div>
-                      <div className='space-x-1 flex items-center'>
-                        <Star className='h-3 w-3 fill-yellow-400 text-yellow-400' />
+                      <div className='flex items-center gap-1'>
+                        <Star className='size-3 flex-shrink-0 fill-yellow-400 text-yellow-400' />
                         <span>
                           {(item.tmdb_data.vote_average || 0).toFixed(1)}
                         </span>
@@ -551,6 +572,9 @@ export default function WatchlistPage() {
                       watchlistId={item.id}
                       isSeen={item.is_seen}
                       title={item.tmdb_data.title || 'Untitled Movie'}
+                      onToggle={(newStatus) =>
+                        handleMovieSeenToggle(item.id, newStatus)
+                      }
                     />
                   ) : (
                     <TVProgressTracker
@@ -562,14 +586,14 @@ export default function WatchlistPage() {
                     />
                   )}
 
-                  <div className='flex flex-wrap gap-1'>
+                  <div className='flex flex-wrap gap-1.5'>
                     {(item.tmdb_data.genres || [])
                       .slice(0, 2)
                       .map((genre: { name: string }) => (
                         <Badge
                           key={genre.name}
                           variant='outline'
-                          className='text-xs'
+                          className='text-xs px-2 py-1 leading-tight rounded-full border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300'
                         >
                           {genre.name}
                         </Badge>

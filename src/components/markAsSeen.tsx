@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
@@ -10,12 +11,14 @@ interface MarkMovieSeenButtonProps {
   watchlistId: number
   isSeen: boolean
   title: string
+  onToggle?: (newStatus: boolean) => void
 }
 
 export default function MarkMovieSeenButton({
   watchlistId,
   isSeen,
   title,
+  onToggle,
 }: MarkMovieSeenButtonProps) {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
@@ -29,10 +32,15 @@ export default function MarkMovieSeenButton({
         .eq('id', watchlistId)
       if (error) {
         console.error('Error updating seen status:', error)
-        toast.error(`Failed to mark ${title} as ${isSeen ? 'unseen' : 'seen'}`)
+        toast.error('Failed to update movie status')
       } else {
-        toast.success(`${title} marked as ${isSeen ? 'unseen' : 'seen'}`)
-        window.location.reload() // Refresh to update UI
+        const newStatus = !isSeen
+        toast.success(
+          newStatus
+            ? `"${title}" marked as seen!`
+            : `"${title}" unmarked as seen`
+        )
+        onToggle?.(newStatus)
       }
     } catch (error) {
       console.error('Unexpected error:', error)
@@ -44,13 +52,17 @@ export default function MarkMovieSeenButton({
 
   return (
     <Button
-      size='sm'
-      variant={isSeen ? 'default' : 'outline'}
+      size='lg'
       onClick={handleToggleSeen}
       disabled={isLoading}
-      className='w-full h-8'
+      className={cn(
+        'w-full h-10 text-white',
+        isSeen
+          ? 'bg-green-600 hover:bg-green-700'
+          : 'bg-blue-600 hover:bg-blue-700'
+      )}
     >
-      <Check className='h-4 w-4 mr-2' />
+      <Check className='size-4' />
       {isSeen ? 'Marked as Seen' : 'Mark as Seen'}
     </Button>
   )

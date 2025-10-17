@@ -169,10 +169,6 @@ export default function NavHeader() {
     router.refresh()
   }
 
-  const handleToggleMenu = () => {
-    setToggleMenu(!toggleMenu)
-  }
-
   return (
     <nav className='sticky top-0 z-50 flex justify-between items-center w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 px-5 lg:px-10 mx-auto'>
       <Link

@@ -38,14 +38,12 @@ import {
   MapPin,
   User,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 
 export default function ProfilePage() {
-  const { user, clearUser } = useAuthStore()
-  const router = useRouter()
+  const { user } = useAuthStore()
   const supabase = createClient()
 
   const [fullName, setFullName] = useState(
@@ -61,7 +59,6 @@ export default function ProfilePage() {
   )
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
   // Mock user stats
@@ -158,24 +155,6 @@ export default function ProfilePage() {
         return
       }
       setAvatarFile(file)
-    }
-  }
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true)
-    try {
-      const { error } = await supabase.rpc('delete_user')
-      if (error) throw error
-
-      await supabase.auth.signOut()
-      clearUser()
-      router.push('/')
-      toast.success('Account deleted successfully')
-    } catch (error) {
-      toast.error('Failed to delete account')
-      console.error('Delete account error:', error)
-    } finally {
-      setIsDeleting(false)
     }
   }
 

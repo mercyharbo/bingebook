@@ -1,4 +1,4 @@
-import MovieDetailsComp from '@/components/MovieDetailsComp'
+import MovieDetailsComp from '@/app/(index)/movie/[id]/MovieDetailsComp'
 import { fetcher } from '@/lib/utils'
 import { Metadata } from 'next'
 

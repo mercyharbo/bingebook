@@ -51,14 +51,14 @@ export default function TopRatedTVShows({
           </Button>
         </Link>
       </div>
-      <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto'>
+      <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto items-stretch'>
         {topRated?.slice(0, 10).map((item: Movie) => (
           <div
             key={item.id}
             className='snap-start shrink-0 w-72'
             onClick={() => openDialog(item)}
           >
-            <Card className='group gap-0 hover:shadow-lg transition-all h-full duration-300 overflow-hidden p-0 cursor-pointer'>
+            <Card className='group gap-0 hover:shadow-lg transition-all h-full flex flex-col duration-300 overflow-hidden p-0 cursor-pointer'>
               <div className='relative'>
                 <Image
                   src={
@@ -73,7 +73,7 @@ export default function TopRatedTVShows({
                 />
                 <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
               </div>
-              <CardContent className='p-3 space-y-2'>
+              <CardContent className='p-3 space-y-2 flex-1 flex flex-col justify-between'>
                 <h3 className='font-semibold text-lg line-clamp-2 mb-1'>
                   {item.name}
                 </h3>
@@ -105,7 +105,7 @@ export default function TopRatedTVShows({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className='min-w-2xl w-full max-h-[90vh] overflow-y-auto'>
+        <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] overflow-y-auto scrollbar-hide'>
           {selectedShow && (
             <DialogHeader>
               <div className='flex flex-col md:flex-row gap-6'>
@@ -127,7 +127,7 @@ export default function TopRatedTVShows({
                     <DialogTitle className='text-2xl mb-2'>
                       {selectedShow.name}
                     </DialogTitle>
-                    <div className='flex items-center gap-4 text-sm text-muted-foreground mb-4'>
+                    <div className='flex justify-center lg:justify-start items-center gap-4 text-sm text-muted-foreground mb-4'>
                       <div className='flex items-center gap-1'>
                         <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
                         <span className='font-medium'>

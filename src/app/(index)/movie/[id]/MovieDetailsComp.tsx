@@ -3,25 +3,20 @@
 import {
   Award,
   Calendar,
-  ChevronDown,
   ChevronLeft,
   Clock,
   ExternalLink,
-  Eye,
   Play,
   Plus,
-  Share2,
   Star,
   Trash2,
-  Tv,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 
-import TVProgressTracker from '@/components/TvProgressTracker'
+import { WatchlistItem } from '@/app/(index)/watchlist/page'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,48 +28,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import LoadingSpinner from '@/components/ui/loading-spinner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 
-interface TVShowDetails {
+interface MovieDetails {
   id: number
-  name: string
+  title: string
   overview: string
   poster_path: string
   backdrop_path: string
-  first_air_date: string
-  last_air_date: string
+  release_date: string
+  runtime: number
   vote_average: number
   vote_count: number
   popularity: number
+  budget: number
+  revenue: number
   status: string
   tagline: string
   homepage: string
+  imdb_id: string
   original_language: string
-  original_name: string
+  original_title: string
   adult: boolean
-  in_production: boolean
-  number_of_episodes: number
-  number_of_seasons: number
-  episode_run_time: number[]
   genres: Array<{ id: number; name: string }>
-  networks: Array<{
-    id: number
-    name: string
-    logo_path: string
-    origin_country: string
-  }>
   production_companies: Array<{
     id: number
     name: string
@@ -83,20 +66,6 @@ interface TVShowDetails {
   }>
   production_countries: Array<{ iso_3166_1: string; name: string }>
   spoken_languages: Array<{ iso_639_1: string; name: string }>
-  created_by: Array<{
-    id: number
-    name: string
-    profile_path: string
-  }>
-  seasons: Array<{
-    id: number
-    name: string
-    overview: string
-    poster_path: string
-    season_number: number
-    episode_count: number
-    air_date: string
-  }>
 }
 
 interface Cast {
@@ -138,196 +107,19 @@ interface Review {
   updated_at: string
 }
 
-interface SimilarTVShow {
+interface SimilarMovie {
   id: number
-  name: string
+  title: string
   poster_path: string
   vote_average: number
-  first_air_date: string
+  release_date: string
 }
 
-interface Episode {
-  id: number
-  episode_number: number
-  name: string
-  overview: string
-  air_date: string | null
-  still_path: string | null
-  runtime: number | null
-}
-
-interface SeasonCardProps {
-  season: TVShowDetails['seasons'][0]
-  tvId: string
-}
-
-function SeasonCard({ season, tvId }: SeasonCardProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const { data: seasonData, isLoading: seasonLoading } = useSWR<{
-    episodes: Episode[]
-  }>(
-    isOpen
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/season/${season.season_number}?language=en-US`
-      : null,
-    fetcher
-  )
-  const episodes: Episode[] = seasonData?.episodes || []
-
-  const { watchlistItem } = useWatchlistStore()
-
-  const hasEpisodeAired = (airDate: string | null) => {
-    if (!airDate) return false
-    const currentDate = new Date()
-    const episodeDate = new Date(airDate)
-    return episodeDate <= currentDate
-  }
-
-  return (
-    <Card key={season.id} className='hover:shadow-lg transition-shadow p-2'>
-      <CardContent className='p-0'>
-        <div className='flex flex-col sm:flex-row gap-4'>
-          <div className='flex-shrink-0 w-[100px] sm:w-[120px]'>
-            <Image
-              src={
-                season.poster_path
-                  ? `https://image.tmdb.org/t/p/w300${season.poster_path}`
-                  : '/sample-poster.jpg'
-              }
-              alt={season.name}
-              width={120}
-              height={180}
-              className='rounded-lg object-cover w-full'
-              sizes='(max-width: 640px) 100px, 120px'
-            />
-          </div>
-          <div className='flex-1 space-y-2'>
-            <div className='flex items-center justify-between'>
-              <h3 className='text-lg sm:text-xl font-semibold'>
-                {season.name}
-              </h3>
-              <div className='flex items-center gap-2'>
-                <Badge variant='secondary'>
-                  {season.episode_count} Episode
-                  {season.episode_count !== 1 ? 's' : ''}
-                </Badge>
-                <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant='outline' size='sm'>
-                      Episodes
-                      <ChevronDown className='h-4 w-4 ml-2' />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className='w-[300px] sm:w-[400px] max-h-[400px] overflow-y-auto'>
-                    {seasonLoading ? (
-                      <DropdownMenuItem>
-                        <Skeleton className='h-6 w-full' />
-                      </DropdownMenuItem>
-                    ) : episodes.length > 0 ? (
-                      episodes.map((episode) => {
-                        const hasAired = hasEpisodeAired(episode.air_date)
-                        return (
-                          <DropdownMenuItem
-                            key={episode.id}
-                            className={`flex flex-col items-start p-2 ${
-                              !hasAired ? 'opacity-50' : ''
-                            }`}
-                            disabled={!hasAired}
-                          >
-                            <div className='flex w-full gap-2'>
-                              {episode.still_path && (
-                                <Image
-                                  src={`https://image.tmdb.org/t/p/w200${episode.still_path}`}
-                                  alt={episode.name}
-                                  width={80}
-                                  height={45}
-                                  className='rounded object-cover'
-                                  sizes='80px'
-                                />
-                              )}
-                              <div className='flex-1'>
-                                <div className='flex justify-between items-start'>
-                                  <span className='font-semibold text-sm'>
-                                    {episode.episode_number}. {episode.name}
-                                  </span>
-                                  <Button
-                                    variant='outline'
-                                    size='sm'
-                                    disabled={!hasAired}
-                                    onClick={() => {}}
-                                    className='text-xs'
-                                  >
-                                    <Eye className='h-3 w-3 mr-1' />
-                                    Mark as Seen
-                                  </Button>
-                                </div>
-                                {episode.air_date && (
-                                  <p className='text-xs text-muted-foreground'>
-                                    Aired:{' '}
-                                    {new Date(
-                                      episode.air_date
-                                    ).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric',
-                                    })}
-                                  </p>
-                                )}
-                                <p className='text-xs text-muted-foreground line-clamp-2'>
-                                  {episode.overview || 'No overview available.'}
-                                </p>
-                                {episode.runtime && (
-                                  <p className='text-xs text-muted-foreground'>
-                                    Runtime: {episode.runtime}m
-                                  </p>
-                                )}
-                                {!hasAired && (
-                                  <Badge variant='outline' className='mt-1'>
-                                    Upcoming
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                        )
-                      })
-                    ) : (
-                      <DropdownMenuItem>
-                        No episodes available.
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-            {season.air_date && (
-              <p className='text-xs sm:text-sm text-muted-foreground'>
-                Aired:{' '}
-                {new Date(season.air_date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </p>
-            )}
-            <p className='text-xs sm:text-sm text-muted-foreground'>
-              Progress:{' '}
-              {watchlistItem?.seen_episodes[`season_${season.season_number}`]
-                ?.length || 0}
-              /{season.episode_count} episodes watched
-            </p>
-            <p className='text-xs sm:text-sm text-muted-foreground line-clamp-3'>
-              {season.overview || 'No overview available for this season.'}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
+export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   const router = useRouter()
   const supabase = createClient()
+
+  const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
 
   const {
     setAddingToWatchlist,
@@ -336,51 +128,49 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     setIsRemovingFromWatchlist,
     isLoadingWatchlist,
     setIsLoadingWatchlist,
-    watchlistItem,
-    setWatchlistItem,
   } = useWatchlistStore()
 
-  // Fetch TV show details
+  // Fetch movie details
   const {
-    data: tvShow,
-    error: tvError,
-    isLoading: tvLoading,
+    data: movie,
+    error: movieError,
+    isLoading: movieLoading,
     mutate,
-  } = useSWR<TVShowDetails>(
-    tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}?language=en-US`
+  } = useSWR<MovieDetails>(
+    movieId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}?language=en-US`
       : null,
     fetcher
   )
 
   // Fetch credits
   const { data: credits } = useSWR(
-    tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/credits?language=en-US`
+    movieId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/credits?language=en-US`
       : null,
     fetcher
   )
 
   // Fetch videos
   const { data: videos } = useSWR(
-    tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/videos?language=en-US`
+    movieId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/videos?language=en-US`
       : null,
     fetcher
   )
 
   // Fetch reviews
   const { data: reviews } = useSWR(
-    tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/reviews?language=en-US&page=1`
+    movieId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/reviews?language=en-US&page=1`
       : null,
     fetcher
   )
 
-  // Fetch similar TV shows
+  // Fetch similar movies
   const { data: similar } = useSWR(
-    tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/similar?language=en-US&page=1`
+    movieId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`
       : null,
     fetcher
   )
@@ -400,8 +190,8 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
           .from('watchlist')
           .select('*')
           .eq('user_id', sessionData.session.user.id)
-          .eq('tmdb_id', tvId)
-          .eq('media_type', 'tv')
+          .eq('tmdb_id', movieId)
+          .eq('media_type', 'movie')
           .single()
 
         if (error && error.code !== 'PGRST116') {
@@ -409,7 +199,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
           console.error('Error fetching watchlist:', error)
           toast.error('Failed to load watchlist')
         } else {
-          setWatchlistItem(data)
+          setWatchlistItem(data || null)
         }
       } catch (error) {
         console.error('Unexpected error:', error)
@@ -418,24 +208,33 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
         setIsLoadingWatchlist(false)
       }
     }
-    if (tvShow) fetchWatchlist()
-  }, [tvShow, supabase, tvId, setIsLoadingWatchlist, setWatchlistItem])
+    if (movie) fetchWatchlist()
+  }, [movie, supabase, movieId, setIsLoadingWatchlist])
 
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
   const crew: Crew[] = credits?.crew || []
-  const creators = tvShow?.created_by || []
-  const producers = crew
-    .filter((person) => person.job === 'Executive Producer')
-    .slice(0, 3)
+  const director = crew.find((person) => person.job === 'Director')
+  const writers = crew.filter(
+    (person) => person.job === 'Writer' || person.job === 'Screenplay'
+  )
   const trailers: Video[] =
     videos?.results?.filter((video: Video) => video.type === 'Trailer') || []
-  const tvReviews: Review[] = reviews?.results || []
-  const similarShows: SimilarTVShow[] = similar?.results?.slice(0, 8) || []
+  const movieReviews: Review[] = reviews?.results || []
+  const similarMovies: SimilarMovie[] = similar?.results?.slice(0, 8) || []
 
-  const formatRuntime = (minutes: number[]) => {
-    if (!minutes || minutes.length === 0) return 'N/A'
-    const avgRuntime = minutes.reduce((a, b) => a + b, 0) / minutes.length
-    return `${Math.round(avgRuntime)}m avg`
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatRuntime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
   }
 
   const getScoreColor = (score: number) => {
@@ -444,19 +243,14 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     return 'text-red-500'
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'returning series':
-      case 'in production':
-        return 'default'
-      case 'ended':
-      case 'canceled':
-        return 'destructive'
-      default:
-        return 'secondary'
-    }
-  }
-
+  /**
+   * The function `addToWatchlist` adds a movie to a user's watchlist in a React application using
+   * TypeScript and Supabase.
+   * @returns The `addToWatchlist` function is an asynchronous function that adds a movie to a user's
+   * watchlist. It first checks if the user is logged in, then sets a flag `addingToWatchlist` to true.
+   * It then retrieves the user ID from the session data, creates an object `tmdbData` from the `movie`
+   * object, and inserts a new record into the 'watch
+   */
   const addToWatchlist = async () => {
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession()
@@ -469,16 +263,13 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     setAddingToWatchlist(true)
 
     const userId = sessionData.session.user.id
-    const tmdbData = {
-      ...tvShow,
-      seasons: tvShow?.seasons || [],
-    }
+    const tmdbData = { ...movie }
     const { error } = await supabase.from('watchlist').insert({
       user_id: userId,
-      tmdb_id: tvShow?.id,
-      media_type: 'tv',
+      tmdb_id: movie?.id,
+      media_type: 'movie',
       tmdb_data: tmdbData,
-      poster_path: tvShow?.poster_path,
+      poster_path: movie?.poster_path,
       is_seen: false,
       seen_episodes: {},
       completed_seasons: [],
@@ -496,6 +287,14 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     }
   }
 
+  /**
+   * The function `removeFromWatchlist` asynchronously removes an item from a watchlist in a TypeScript
+   * React application using Supabase, handling errors and displaying toast messages accordingly.
+   * @returns The `removeFromWatchlist` function is an asynchronous function that attempts to delete an
+   * item from the 'watchlist' table in a Supabase database. If the `watchlistItem` is not defined, the
+   * function will return early. Otherwise, it will attempt to delete the item with the specified `id`
+   * from the 'watchlist' table.
+   */
   const removeFromWatchlist = async () => {
     if (!watchlistItem) return
     setIsRemovingFromWatchlist(true)
@@ -503,7 +302,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
       const { error } = await supabase
         .from('watchlist')
         .delete()
-        .eq('id', watchlistItem.id)
+        .eq('id', watchlistItem?.id)
       if (error) {
         console.error('Error removing from watchlist:', error)
         toast.error('Failed to remove from watchlist')
@@ -519,10 +318,10 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     }
   }
 
-  if (tvLoading) {
+  if (movieLoading) {
     return (
       <div className='min-h-screen'>
-        <div className='relative h-[80dvh] bg-gradient-to-b from-black/50 to-black'>
+        <div className='relative h-[70vh] bg-gradient-to-b from-black/50 to-black'>
           <Skeleton className='w-full h-full' />
         </div>
         <div className='container mx-auto px-4 py-6 sm:px-6'>
@@ -542,15 +341,15 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     )
   }
 
-  if (tvError || !tvShow) {
+  if (movieError || !movie) {
     return (
       <div className='min-h-screen flex items-center justify-center px-4'>
         <div className='text-center'>
           <h1 className='text-xl sm:text-2xl font-bold mb-4'>
-            TV Show Not Found
+            Movie Not Found
           </h1>
           <p className='text-muted-foreground mb-4 text-sm sm:text-base'>
-            The TV show you&apos;re looking for doesn&apos;t exist or has been
+            The movie you&apos;re looking for doesn&apos;t exist or has been
             removed.
           </p>
           <Button onClick={() => router.back()}>
@@ -565,11 +364,11 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
   return (
     <div className='min-h-screen'>
       {/* Hero Section */}
-      <div className='relative h-[80dvh] overflow-hidden'>
-        {tvShow.backdrop_path && (
+      <div className='relative h-[80vh] overflow-hidden'>
+        {movie.backdrop_path && (
           <Image
-            src={`https://image.tmdb.org/t/p/original${tvShow.backdrop_path}`}
-            alt={tvShow.name}
+            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+            alt={movie.title}
             fill
             className='object-cover'
             priority
@@ -578,7 +377,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
         )}
         <div className='absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent' />
 
-        <div className='absolute top-4 left-10 hidden lg:block'>
+        <div className='absolute top-4 left-4 sm:left-6 hidden sm:block'>
           <Button
             variant='secondary'
             onClick={() => router.back()}
@@ -589,17 +388,17 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
           </Button>
         </div>
 
-        <div className='absolute bottom-0 left-0 right-0 p-5 lg:p-10'>
+        <div className='absolute bottom-0 left-0 right-0 p-4 sm:p-6'>
           <div className='container mx-auto'>
-            <div className='flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6 items-start'>
+            <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 items-start'>
               <div className='flex-shrink-0 w-[150px] lg:w-[200px]'>
                 <Image
                   src={
-                    tvShow.poster_path
-                      ? `https://image.tmdb.org/t/p/w500${tvShow.poster_path}`
+                    movie.poster_path
+                      ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                       : '/sample-poster.jpg'
                   }
-                  alt={tvShow.name}
+                  alt={movie.title}
                   width={180}
                   height={270}
                   className='rounded-lg shadow-2xl w-full'
@@ -610,11 +409,11 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
               <div className='flex-1 text-white space-y-3'>
                 <div className='space-y-2'>
                   <h1 className='text-2xl sm:text-3xl md:text-4xl font-bold'>
-                    {tvShow.name}
+                    {movie.title}
                   </h1>
-                  {tvShow.tagline && (
+                  {movie.tagline && (
                     <p className='text-base sm:text-lg text-gray-300 italic'>
-                      {tvShow.tagline}
+                      {movie.tagline}
                     </p>
                   )}
                 </div>
@@ -624,52 +423,59 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                     <Star className='h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400' />
                     <span
                       className={`text-base sm:text-lg font-semibold ${getScoreColor(
-                        tvShow.vote_average
+                        movie.vote_average
                       )}`}
                     >
-                      {tvShow.vote_average.toFixed(1)}
+                      {movie.vote_average.toFixed(1)}
                     </span>
                     <span className='text-gray-300 text-sm sm:text-base'>
-                      ({tvShow.vote_count.toLocaleString()} votes)
+                      ({movie.vote_count.toLocaleString()} votes)
                     </span>
                   </div>
 
-                  <div className='flex items-center gap-2'>
-                    <Clock className='h-4 w-4' />
-                    <span className='text-sm sm:text-base'>
-                      {formatRuntime(tvShow.episode_run_time)}
-                    </span>
-                  </div>
+                  {movie.runtime > 0 && (
+                    <div className='flex items-center gap-2'>
+                      <Clock className='h-4 w-4' />
+                      <span className='text-sm sm:text-base'>
+                        {formatRuntime(movie.runtime)}
+                      </span>
+                    </div>
+                  )}
 
                   <div className='flex items-center gap-2'>
                     <Calendar className='h-4 w-4' />
                     <span className='text-sm sm:text-base'>
-                      {new Date(tvShow.first_air_date).getFullYear()}
-                      {tvShow.last_air_date &&
-                        tvShow.status === 'Ended' &&
-                        ` - ${new Date(tvShow.last_air_date).getFullYear()}`}
-                    </span>
-                  </div>
-
-                  <div className='flex items-center gap-2'>
-                    <Tv className='h-4 w-4' />
-                    <span className='text-sm sm:text-base'>
-                      {tvShow.number_of_seasons} Season
-                      {tvShow.number_of_seasons !== 1 ? 's' : ''}
+                      {new Date(movie.release_date).toLocaleDateString(
+                        'en-US',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
+                      )}
                     </span>
                   </div>
                 </div>
 
                 <div className='flex flex-wrap gap-2'>
-                  {tvShow.genres.map((genre) => (
-                    <Badge key={genre.id} variant='secondary'>
+                  {movie.genres.map((genre) => (
+                    <Badge
+                      key={genre.id}
+                      variant='secondary'
+                      className='rounded-3xl px-4'
+                    >
                       {genre.name}
                     </Badge>
                   ))}
-                  <Badge variant={getStatusColor(tvShow.status)}>
-                    {tvShow.status}
-                  </Badge>
                 </div>
+
+                {/* {watchlistItem && (
+                  <MarkMovieSeenButton
+                    watchlistId={watchlistItem.id}
+                    isSeen={watchlistItem.is_seen}
+                    title={movie.title}
+                  />
+                )} */}
 
                 <div className='flex flex-wrap gap-2'>
                   {trailers.length > 0 && (
@@ -677,7 +483,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                       <DialogTrigger asChild>
                         <Button
                           size='lg'
-                          className='bg-red-600 hover:bg-red-700 min-w-[140px]'
+                          className='bg-blue-600 hover:bg-blue-700 min-w-[140px]'
                         >
                           <Play className='h-4 w-4 mr-2' />
                           Watch Trailer
@@ -708,7 +514,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                     >
                       {addingToWatchlist ? (
                         <div className='flex items-center gap-2'>
-                          <LoadingSpinner size={20} />
+                          <LoadingSpinner size={20} className='text-white' />
                           <span>Adding...</span>
                         </div>
                       ) : (
@@ -719,10 +525,11 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                       )}
                     </Button>
                   )}
+
                   {watchlistItem && !isLoadingWatchlist && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant='destructive' className='h-10'>
+                        <Button className='bg-blue-600 hover:bg-blue-700 h-10'>
                           <Trash2 className='h-4 w-4' /> Remove from Watchlist
                         </Button>
                       </DialogTrigger>
@@ -730,7 +537,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                         <DialogHeader>
                           <DialogTitle>Remove from Watchlist</DialogTitle>
                           <DialogDescription>
-                            Are you sure you want to remove {tvShow.name} from
+                            Are you sure you want to remove {movie.title} from
                             your watchlist?
                           </DialogDescription>
                         </DialogHeader>
@@ -739,7 +546,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                             Cancel
                           </Button>
                           <Button
-                            variant='destructive'
+                            className='bg-blue-600 hover:bg-blue-700'
                             disabled={isRemovingFromWatchlist}
                             onClick={removeFromWatchlist}
                           >
@@ -756,11 +563,6 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                       </DialogContent>
                     </Dialog>
                   )}
-
-                  <Button variant='outline' size='lg' className='min-w-[140px]'>
-                    <Share2 className='h-4 w-4 mr-2' />
-                    Share
-                  </Button>
                 </div>
               </div>
             </div>
@@ -770,36 +572,21 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
 
       {/* Main Content */}
       <div className='container mx-auto px-4 sm:px-6 py-6 sm:py-8'>
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           {/* Main Content */}
           <div className='md:col-span-2'>
             <Tabs defaultValue='overview' className='w-full'>
-              <TabsList className='flex justify-start w-full overflow-x-auto sm:grid sm:grid-cols-5 h-12 py-2 gap-2 scroll-snap-x snap-mandatory sm:overflow-visible'>
-                <TabsTrigger
-                  value='overview'
-                  className='snap-start shrink-0 px-2'
-                >
+              <TabsList className='grid grid-cols-4 w-full h-12 overflow-x-auto snap-x snap-mandatory scrollbar-hide'>
+                <TabsTrigger value='overview' className='snap-start'>
                   Overview
                 </TabsTrigger>
-                <TabsTrigger
-                  value='seasons'
-                  className='snap-start shrink-0 px-2'
-                >
-                  Seasons
-                </TabsTrigger>
-                <TabsTrigger value='cast' className='snap-start shrink-0 px-2'>
+                <TabsTrigger value='cast' className='snap-start'>
                   Cast & Crew
                 </TabsTrigger>
-                <TabsTrigger
-                  value='videos'
-                  className='snap-start shrink-0 px-2'
-                >
+                <TabsTrigger value='videos' className='snap-start'>
                   Videos
                 </TabsTrigger>
-                <TabsTrigger
-                  value='reviews'
-                  className='snap-start shrink-0 px-2'
-                >
+                <TabsTrigger value='reviews' className='snap-start'>
                   Reviews
                 </TabsTrigger>
               </TabsList>
@@ -810,88 +597,51 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                     Overview
                   </h2>
                   <p className='text-muted-foreground leading-relaxed text-sm sm:text-base'>
-                    {tvShow.overview || 'No overview available.'}
+                    {movie.overview || 'No overview available.'}
                   </p>
                 </div>
 
-                {creators.length > 0 && (
+                {director && (
                   <div>
                     <h3 className='text-base sm:text-lg font-semibold mb-2'>
-                      Created By
+                      Director
                     </h3>
-                    <div className='flex flex-wrap gap-4'>
-                      {creators.map((creator) => (
-                        <Link href={`/person/${creator.id}`} key={creator.id}>
-                          <div className='flex items-center gap-3'>
-                            <Image
-                              src={
-                                creator.profile_path
-                                  ? `https://image.tmdb.org/t/p/w185${creator.profile_path}`
-                                  : '/avatar.jpg'
-                              }
-                              alt={creator.name}
-                              width={60}
-                              height={60}
-                              className='rounded-full h-12 w-12 sm:h-16 sm:w-16 object-top object-cover'
-                              sizes='(max-width: 640px) 48px, 64px'
-                            />
-                            <span className='font-medium text-sm sm:text-base'>
-                              {creator.name}
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+                    <Link href={`/person/${director.id}`}>
+                      <div className='flex items-center gap-3'>
+                        <Image
+                          src={
+                            director.profile_path
+                              ? `https://image.tmdb.org/t/p/w185${director.profile_path}`
+                              : '/avatar.jpg'
+                          }
+                          alt={director.name}
+                          width={60}
+                          height={60}
+                          className='rounded-full h-12 w-12 sm:h-16 sm:w-16 object-top object-cover'
+                          sizes='(max-width: 640px) 48px, 64px'
+                        />
+                        <span className='font-medium text-sm sm:text-base'>
+                          {director.name}
+                        </span>
+                      </div>
+                    </Link>
                   </div>
                 )}
 
-                {producers.length > 0 && (
+                {writers.length > 0 && (
                   <div className='space-y-3'>
                     <h3 className='text-base sm:text-lg font-semibold'>
-                      Executive Producers
+                      Writers
                     </h3>
                     <div className='flex flex-wrap gap-2'>
-                      {producers.map((producer) => (
-                        <Link key={producer.id} href={`/person/${producer.id}`}>
-                          <Badge variant='outline'>{producer.name}</Badge>
+                      {writers.map((writer) => (
+                        <Link key={writer.id} href={`/person/${writer.id}`}>
+                          <Badge variant='outline'>{writer.name}</Badge>
                         </Link>
                       ))}
                     </div>
                   </div>
                 )}
-              </TabsContent>
-
-              <TabsContent value='seasons' className='space-y-6'>
-                <div className='space-y-4'>
-                  <h2 className='text-xl sm:text-2xl font-bold'>Seasons</h2>
-                  <div className='space-y-4'>
-                    {/* {tvShow.seasons
-                      .filter((season) => season.season_number > 0)
-                      .map((season) => (
-                        <SeasonCard
-                          key={season.id}
-                          season={season}
-                          tvId={tvId}
-                        />
-                      ))} */}
-                    {tvShow.seasons.map((season) => (
-                      <SeasonCard
-                        key={season.id}
-                        season={season}
-                        tvId={tvShow.id.toString()}
-                      />
-                    ))}
-                    {watchlistItem && (
-                      <TVProgressTracker
-                        watchlistId={watchlistItem.id}
-                        tmdbId={tvShow.id}
-                        seasons={tvShow.seasons}
-                        seenEpisodes={watchlistItem.seen_episodes}
-                        completedSeasons={watchlistItem.completed_seasons}
-                      />
-                    )}
-                  </div>
-                </div>
               </TabsContent>
 
               <TabsContent value='cast' className='space-y-6'>
@@ -954,16 +704,6 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                                 className='w-full h-full rounded-lg'
                                 allowFullScreen
                               />
-                              {/* <Image
-                                src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
-                                alt={video.name}
-                                fill
-                                className='object-cover w-full'
-                                sizes='(max-width: 640px) 100vw, 50vw'
-                              />
-                              <div className='absolute inset-0 flex items-center justify-center bg-black/20'>
-                                <Play className='h-10 w-10 sm:h-12 sm:w-12 text-white' />
-                              </div> */}
                             </div>
                             <div className='space-y-1 p-2'>
                               <h4 className='font-semibold text-sm sm:text-base'>
@@ -990,9 +730,9 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                   <h2 className='text-xl sm:text-2xl font-bold mb-4'>
                     Reviews
                   </h2>
-                  {tvReviews.length > 0 ? (
+                  {movieReviews.length > 0 ? (
                     <div className='space-y-4'>
-                      {tvReviews.slice(0, 3).map((review) => (
+                      {movieReviews.slice(0, 3).map((review) => (
                         <Card key={review.id} className='p-4'>
                           <CardContent className='p-0'>
                             <div className='flex items-start gap-4'>
@@ -1046,11 +786,12 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
 
           {/* Sidebar */}
           <div className='space-y-6'>
+            {/* Movie Stats */}
             <Card>
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 text-base sm:text-lg'>
                   <Award className='h-5 w-5' />
-                  Show Stats
+                  Movie Stats
                 </CardTitle>
               </CardHeader>
               <CardContent className='space-y-4'>
@@ -1058,77 +799,57 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                   <span className='text-muted-foreground text-sm sm:text-base'>
                     Status
                   </span>
-                  <Badge variant={getStatusColor(tvShow.status)}>
-                    {tvShow.status}
+                  <Badge
+                    variant={
+                      movie.status === 'Released' ? 'default' : 'secondary'
+                    }
+                    className='rounded-3xl px-4'
+                  >
+                    {movie.status}
                   </Badge>
                 </div>
-
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    Seasons
-                  </span>
-                  <span className='font-medium text-sm sm:text-base'>
-                    {tvShow.number_of_seasons}
-                  </span>
-                </div>
-
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    Episodes
-                  </span>
-                  <span className='font-medium text-sm sm:text-base'>
-                    {tvShow.number_of_episodes}
-                  </span>
-                </div>
-
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    First Aired
-                  </span>
-                  <span className='font-medium text-sm sm:text-base'>
-                    {new Date(tvShow.first_air_date).toLocaleDateString()}
-                  </span>
-                </div>
-
-                {tvShow.last_air_date && tvShow.status === 'Ended' && (
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground text-sm sm:text-base'>
-                      Last Aired
-                    </span>
-                    <span className='font-medium text-sm sm:text-base'>
-                      {new Date(tvShow.last_air_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
 
                 <div className='flex justify-between'>
                   <span className='text-muted-foreground text-sm sm:text-base'>
                     Original Language
                   </span>
                   <span className='font-medium text-sm sm:text-base'>
-                    {tvShow.original_language.toUpperCase()}
+                    {movie.original_language.toUpperCase()}
                   </span>
                 </div>
+
+                {movie.budget > 0 && (
+                  <div className='flex justify-between'>
+                    <span className='text-muted-foreground text-sm sm:text-base'>
+                      Budget
+                    </span>
+                    <span className='font-medium text-sm sm:text-base'>
+                      {formatCurrency(movie.budget)}
+                    </span>
+                  </div>
+                )}
+
+                {movie.revenue > 0 && (
+                  <div className='flex justify-between'>
+                    <span className='text-muted-foreground text-sm sm:text-base'>
+                      Revenue
+                    </span>
+                    <span className='font-medium text-sm sm:text-base'>
+                      {formatCurrency(movie.revenue)}
+                    </span>
+                  </div>
+                )}
 
                 <div className='flex justify-between'>
                   <span className='text-muted-foreground text-sm sm:text-base'>
                     Popularity
                   </span>
                   <span className='font-medium text-sm sm:text-base'>
-                    {tvShow.popularity.toFixed(0)}
+                    {movie.popularity.toFixed(0)}
                   </span>
                 </div>
 
-                {tvShow.in_production && (
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground text-sm sm:text-base'>
-                      In Production
-                    </span>
-                    <Badge variant='default'>Yes</Badge>
-                  </div>
-                )}
-
-                {tvShow.homepage && (
+                {movie.homepage && (
                   <div className='pt-2'>
                     <Button
                       variant='outline'
@@ -1136,7 +857,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                       asChild
                     >
                       <Link
-                        href={tvShow.homepage}
+                        href={movie.homepage}
                         target='_blank'
                         rel='noopener noreferrer'
                       >
@@ -1149,40 +870,8 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
               </CardContent>
             </Card>
 
-            {/* Networks */}
-            {tvShow.networks.length > 0 && (
-              <Card className='p-4'>
-                <CardHeader className='justify-start items-start p-0'>
-                  <CardTitle className='text-base sm:text-lg'>
-                    Networks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className='p-0'>
-                  <div className='space-y-3'>
-                    {tvShow.networks.map((network) => (
-                      <div key={network.id} className='flex items-center gap-3'>
-                        {network.logo_path && (
-                          <Image
-                            src={`https://image.tmdb.org/t/p/w185${network.logo_path}`}
-                            alt={network.name}
-                            width={40}
-                            height={40}
-                            className='object-cover'
-                            sizes='40px'
-                          />
-                        )}
-                        <span className='text-sm font-medium'>
-                          {network.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Production Companies */}
-            {tvShow.production_companies.length > 0 && (
+            {movie.production_companies.length > 0 && (
               <Card className='p-4'>
                 <CardHeader className='justify-start items-start p-0'>
                   <CardTitle className='text-base sm:text-lg'>
@@ -1191,7 +880,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                 </CardHeader>
                 <CardContent className='p-0'>
                   <div className='space-y-3'>
-                    {tvShow.production_companies.slice(0, 3).map((company) => (
+                    {movie.production_companies.slice(0, 3).map((company) => (
                       <div key={company.id} className='flex items-center gap-3'>
                         {company.logo_path && (
                           <Image
@@ -1213,43 +902,43 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
               </Card>
             )}
 
-            {/* Similar TV Shows */}
-            {similarShows.length > 0 && (
+            {/* Similar Movies */}
+            {similarMovies.length > 0 && (
               <Card className='p-4'>
-                <CardHeader className='p-0'>
+                <CardHeader>
                   <CardTitle className='text-base sm:text-lg'>
-                    Similar Shows
+                    Similar Movies
                   </CardTitle>
                 </CardHeader>
                 <CardContent className='p-0'>
-                  <div className='flex justify-start overflow-x-auto gap-3 scroll-snap-x snap-mandatory sm:scrollbar-hide'>
-                    {similarShows.slice(0, 4).map((similarShow) => (
+                  <div className='flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-3'>
+                    {similarMovies.slice(0, 4).map((similarMovie) => (
                       <Link
-                        key={similarShow.id}
-                        href={`/tv/${similarShow.id}`}
-                        className='snap-start shrink-0 w-[45%] sm:w-[30%] lg:w-[20%] group cursor-pointer'
+                        key={similarMovie.id}
+                        href={`/movie/${similarMovie.id}`}
+                        className='group cursor-pointer snap-start flex-shrink-0 w-[140px] sm:w-[160px]'
                       >
                         <div className='space-y-2'>
                           <Image
                             src={
-                              similarShow.poster_path
-                                ? `https://image.tmdb.org/t/p/w300${similarShow.poster_path}`
+                              similarMovie.poster_path
+                                ? `https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`
                                 : '/sample-poster.jpg'
                             }
-                            alt={similarShow.name}
-                            width={100}
-                            height={150}
+                            alt={similarMovie.title}
+                            width={160}
+                            height={240}
                             className='rounded-xl object-cover w-full group-hover:scale-105 transition-transform'
-                            // sizes='(max-width: 640px) 50vw, 33vw'
+                            sizes='(max-width: 640px) 140px, 160px'
                           />
                           <div>
                             <h4 className='text-xs sm:text-sm font-medium line-clamp-2'>
-                              {similarShow.name}
+                              {similarMovie.title}
                             </h4>
                             <div className='flex items-center gap-1 mt-1'>
                               <Star className='h-3 w-3 fill-yellow-400 text-yellow-400' />
                               <span className='text-xs'>
-                                {similarShow.vote_average.toFixed(1)}
+                                {similarMovie.vote_average.toFixed(1)}
                               </span>
                             </div>
                           </div>

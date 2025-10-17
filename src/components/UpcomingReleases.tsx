@@ -49,14 +49,14 @@ export default function UpcomingReleases({
           View Calendar
         </Button>
       </div>
-      <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto'>
+      <div className='flex gap-6 snap-x snap-mandatory px-4 scrollbar-hide overflow-auto items-stretch'>
         {unreleasedMovies?.map((item: Movie) => (
           <div
             key={item.id}
             className='snap-start shrink-0 w-72'
             onClick={() => openDialog(item)}
           >
-            <Card className='group rounded-md gap-0 hover:shadow-lg transition-all duration-300 overflow-hidden p-0 cursor-pointer'>
+            <Card className='group rounded-md gap-0 hover:shadow-lg transition-all h-full flex flex-col duration-300 overflow-hidden p-0 cursor-pointer'>
               <div className='relative'>
                 <Image
                   src={
@@ -71,7 +71,7 @@ export default function UpcomingReleases({
                 />
                 <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
               </div>
-              <CardContent className='p-2 space-y-2 gap-0'>
+              <CardContent className='p-2 space-y-2 gap-0 flex-1 flex flex-col justify-between'>
                 <h3 className='font-semibold text-lg line-clamp-2 mb-1'>
                   {item.title}
                 </h3>
@@ -103,7 +103,7 @@ export default function UpcomingReleases({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className='min-w-2xl w-full max-h-[90vh] overflow-y-auto'>
+        <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] overflow-y-auto scrollbar-hide'>
           {selectedMovie && (
             <DialogHeader>
               <div className='flex flex-col md:flex-row gap-6'>
@@ -125,7 +125,7 @@ export default function UpcomingReleases({
                     <DialogTitle className='text-2xl mb-2'>
                       {selectedMovie.title}
                     </DialogTitle>
-                    <div className='flex items-center gap-4 text-sm text-muted-foreground mb-4'>
+                    <div className='flex justify-center lg:justify-start items-center gap-4 text-sm text-muted-foreground mb-4'>
                       <div className='flex items-center gap-1'>
                         <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
                         <span className='font-medium'>

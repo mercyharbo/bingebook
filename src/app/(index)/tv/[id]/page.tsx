@@ -1,4 +1,4 @@
-import TvShowDetailsComp from '@/components/TvShowDetailsComp'
+import TvShowDetailsComp from '@/app/(index)/tv/[id]/TvShowDetailsComp'
 import { fetcher } from '@/lib/utils'
 import { Metadata } from 'next'
 

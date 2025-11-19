@@ -1,0 +1,159 @@
+'use client'
+
+import MarkMovieSeenButton from '@/components/markAsSeen'
+import TVProgressTracker from '@/components/TvProgressTracker'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { WatchlistItem } from '@/types/watchlist'
+import { Calendar, Info, Star } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+
+interface WatchlistItemDialogProps {
+  selectedItem: WatchlistItem | null
+  isDialogOpen: boolean
+  setIsDialogOpen: (open: boolean) => void
+  removeFromWatchlist: (id: number) => void
+  addToWatchlist: (item: WatchlistItem) => void
+  handleMovieSeenToggle: (watchlistId: number, newStatus: boolean) => void
+  isRemovingFromWatchlist: boolean
+  watchlistItems: WatchlistItem[]
+}
+
+export default function WatchlistItemDialog({
+  selectedItem,
+  isDialogOpen,
+  setIsDialogOpen,
+  removeFromWatchlist,
+  addToWatchlist,
+  handleMovieSeenToggle,
+  isRemovingFromWatchlist,
+  watchlistItems,
+}: WatchlistItemDialogProps) {
+  const isInWatchlist = selectedItem
+    ? watchlistItems.some((item) => item.id === selectedItem.id)
+    : false
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] p-0 overflow-y-auto space-y-0 gap-0 scrollbar-hide'>
+        {selectedItem && (
+          <div className='flex flex-col md:flex-row gap-6'>
+            <div className='flex justify-center md:justify-start'>
+              <Image
+                src={
+                  selectedItem.poster_path
+                    ? `https://image.tmdb.org/t/p/w300${selectedItem.poster_path}`
+                    : '/placeholder.svg'
+                }
+                alt={
+                  selectedItem.media_type === 'movie'
+                    ? selectedItem.tmdb_data.title || 'Movie poster'
+                    : selectedItem.tmdb_data.name || 'TV poster'
+                }
+                width={500}
+                height={300}
+                quality={100}
+                className='rounded-t-lg object-cover w-full h-72 md:w-52 md:h-78 flex-shrink-0'
+              />
+            </div>
+
+            <div className='flex-1 space-y-4 text-left px-4 pb-4 md:text-left'>
+              <div className='space-y-3'>
+                <DialogTitle className='text-2xl font-semibold '>
+                  {selectedItem.media_type === 'movie'
+                    ? selectedItem.tmdb_data.title || 'Untitled Movie'
+                    : selectedItem.tmdb_data.name || 'Untitled Series'}
+                </DialogTitle>
+
+                <div className='flex justify-start items-start gap-4 text-sm text-muted-foreground'>
+                  <div className='flex items-center gap-1'>
+                    <Star className='size-4 fill-yellow-400 text-yellow-400' />
+                    <span className='font-medium'>
+                      {(selectedItem.tmdb_data.vote_average || 0).toFixed(1)}
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-1'>
+                    <Calendar className='size-4' />
+                    <span>
+                      {new Date(
+                        selectedItem.media_type === 'movie'
+                          ? selectedItem.tmdb_data.release_date || ''
+                          : selectedItem.tmdb_data.first_air_date || ''
+                      ).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <Badge variant='outline'>
+                    {(
+                      selectedItem.tmdb_data.original_language || ''
+                    ).toUpperCase()}
+                  </Badge>
+                </div>
+                <p className='text-base leading-relaxed'>
+                  {selectedItem.tmdb_data.overview}
+                </p>
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                {isInWatchlist ? (
+                  <Button
+                    size={'lg'}
+                    variant='destructive'
+                    onClick={() => removeFromWatchlist(selectedItem.id)}
+                    disabled={isRemovingFromWatchlist}
+                  >
+                    {isRemovingFromWatchlist
+                      ? 'Removing...'
+                      : 'Remove from Watchlist'}
+                  </Button>
+                ) : (
+                  <Button
+                    size={'lg'}
+                    variant='default'
+                    onClick={() => addToWatchlist(selectedItem)}
+                  >
+                    Add to Watchlist
+                  </Button>
+                )}
+                <Button size={'lg'} variant='outline' asChild>
+                  <Link
+                    href={`/${selectedItem.media_type}/${selectedItem.tmdb_id}`}
+                  >
+                    <Info className='size-4' />
+                    View Details
+                  </Link>
+                </Button>
+              </div>
+              {isInWatchlist && (
+                <>
+                  {selectedItem.media_type === 'movie' ? (
+                    <MarkMovieSeenButton
+                      watchlistId={selectedItem.id}
+                      isSeen={selectedItem.is_seen}
+                      title={selectedItem.tmdb_data.title || 'Untitled Movie'}
+                      onToggle={(newStatus) =>
+                        handleMovieSeenToggle(selectedItem.id, newStatus)
+                      }
+                    />
+                  ) : (
+                    <TVProgressTracker
+                      watchlistId={selectedItem.id}
+                      tmdbId={selectedItem.tmdb_id}
+                      seasons={selectedItem.tmdb_data.seasons || []}
+                      seenEpisodes={selectedItem.seen_episodes}
+                      completedSeasons={selectedItem.completed_seasons}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}

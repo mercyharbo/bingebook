@@ -1,7 +1,12 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -9,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -18,7 +22,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useDiscoverStore } from '@/lib/store/discoverStore'
-import { Calendar, Filter, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { Calendar as CalendarIcon, Filter, X } from 'lucide-react'
+import { useState } from 'react'
 
 const movieGenres = [
   { id: 28, name: 'Action' },
@@ -63,19 +70,19 @@ const tvGenres = [
 export default function FilterSheet() {
   const {
     selectedGenres,
-    minDate,
-    maxDate,
+    dateRange,
     sortBy,
     mediaType,
     isFilterOpen,
     toggleGenre,
-    setMinDate,
-    setMaxDate,
+    setDateRange,
     setSortBy,
     setMediaType,
     setIsFilterOpen,
     clearAllFilters,
   } = useDiscoverStore()
+
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   const genres = mediaType === 'movie' ? movieGenres : tvGenres
 
@@ -114,7 +121,7 @@ export default function FilterSheet() {
             discovery experience
           </SheetDescription>
         </SheetHeader>
-        <div className='p-4 space-y-6'>
+        <div className='p-4 space-y-5'>
           <div>
             <h3 className='font-semibold mb-3 flex items-center gap-2'>
               <Filter className='h-4 w-4' />
@@ -129,7 +136,6 @@ export default function FilterSheet() {
                       ? 'default'
                       : 'outline'
                   }
-                  size='sm'
                   onClick={() => toggleGenre(genre.id.toString())}
                   className='text-xs'
                 >
@@ -139,49 +145,67 @@ export default function FilterSheet() {
             </div>
           </div>
 
-          <Separator />
-
           <div className='space-y-5'>
             <h3 className='font-semibold mb-3 flex items-center gap-2'>
-              <Calendar className='h-4 w-4' />
+              <CalendarIcon className='h-4 w-4' />
               Release Date Range
             </h3>
-            <div className='space-y-3 flex flex-col lg:flex-row gap-5'>
-              <div className='space-y-2'>
-                <label htmlFor='minDate' className='text-sm font-medium block'>
-                  From:
-                </label>
-                <Input
-                  id='minDate'
-                  type='date'
-                  value={minDate}
-                  onChange={(e) => setMinDate(e.target.value)}
-                />
-              </div>
-              <div className='space-y-2'>
-                <label htmlFor='maxDate' className='text-sm font-medium block'>
-                  To:
-                </label>
-                <Input
-                  id='maxDate'
-                  type='date'
-                  value={maxDate}
-                  onChange={(e) => setMaxDate(e.target.value)}
-                />
-              </div>
+            <div className='grid gap-2'>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id='date'
+                    variant='outline'
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !dateRange && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className='mr-2 h-4 w-4' />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, 'LLL dd, y')} -{' '}
+                          {format(dateRange.to, 'LLL dd, y')}
+                        </>
+                      ) : (
+                        format(dateRange.from, 'LLL dd, y')
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className='w-auto p-0'
+                  align='start'
+                  // sideOffset={5}
+                >
+                  <Calendar
+                    mode='range'
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={(range) => {
+                      setDateRange(range)
+                      if (range?.from && range?.to) {
+                        setIsCalendarOpen(false)
+                      }
+                    }}
+                    numberOfMonths={1}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          <Separator />
-
-          <div className='flex flex-col justify-start gap-5 lg:flex-row lg:items-center'>
+          <div className='flex flex-col justify-start gap-5 '>
             <div className='space-y-2'>
               <h3 className='font-semibold'>Sort By</h3>
               <Select
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value)}
               >
-                <SelectTrigger>
+                <SelectTrigger size='lg' className='w-full'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -197,7 +221,7 @@ export default function FilterSheet() {
             <div className='space-y-2'>
               <h3 className='font-semibold'>Media Type</h3>
               <Select value={mediaType} onValueChange={handleMediaTypeChange}>
-                <SelectTrigger className='w-[150px]'>
+                <SelectTrigger size='lg' className='w-full'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -210,10 +234,10 @@ export default function FilterSheet() {
 
           <Button
             onClick={clearAllFilters}
-            variant='outline'
-            className='w-full bg-transparent'
+            variant='default'
+            className='w-full text-black border border-b-gray-200 bg-transparent'
           >
-            <X className='h-4 w-4 mr-2' />
+            <X className='size-4' />
             Clear All Filters
           </Button>
         </div>

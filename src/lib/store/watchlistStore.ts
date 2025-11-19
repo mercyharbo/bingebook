@@ -1,4 +1,4 @@
-import { WatchlistItem } from '@/app/(index)/watchlist/page'
+import { WatchlistItem } from '@/types/watchlist'
 import { create } from 'zustand'
 
 interface WatchlistState {

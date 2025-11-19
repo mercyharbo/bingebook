@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Calendar,
-  Check,
-  Loader2,
-  Plus,
-  SlidersHorizontal,
-  Star,
-} from 'lucide-react'
+import { Calendar, SlidersHorizontal } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
@@ -15,13 +8,6 @@ import useSWR from 'swr'
 import HeroSlider from '@/components/HeroSlider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useUpcomingStore } from '@/lib/store/upcomingStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
@@ -32,13 +18,13 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import UpcomingFilterSheet from './UpcomingFilterSheet'
 import UpcomingLoadingSkeleton from './UpcomingLoadingSkeleton'
+import UpcomingMovieDialog from './UpcomingMovieDialog'
 import UpcomingPagination from './UpcomingPagination'
 
 export default function UpcomingMoviesPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Store state
   const {
     upcomingMovies,
     selectedGenres,
@@ -301,7 +287,7 @@ export default function UpcomingMoviesPage() {
             filteredMovies.map((movie: MovieOnly) => (
               <div
                 key={movie.id}
-                className='snap-start shrink-0 w-64 group cursor-pointer'
+                className='snap-start shrink-0 w-full group cursor-pointer'
                 onClick={() => handleMovieClick(movie)}
               >
                 <div className='relative mb-3 overflow-hidden rounded-lg'>
@@ -350,107 +336,15 @@ export default function UpcomingMoviesPage() {
         )}
       </div>
 
-      {/* Movie Details Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className='lg:max-w-[500px] h-[60vh] overflow-y-auto scrollbar-hide'>
-          <DialogHeader>
-            <DialogTitle className='text-xl font-bold'>
-              {selectedMovie?.title}
-            </DialogTitle>
-            <DialogDescription className='text-sm text-muted-foreground'>
-              Quick Preview
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedMovie && (
-            <div className='space-y-4'>
-              {/* Responsive poster and meta section */}
-              <div className='flex flex-col sm:flex-row gap-4'>
-                <div className='flex-shrink-0 mx-auto sm:mx-0'>
-                  <Image
-                    src={
-                      selectedMovie.poster_path
-                        ? `https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`
-                        : '/sample-poster.jpg'
-                    }
-                    alt={selectedMovie.title}
-                    width={150}
-                    height={200}
-                    className='rounded-lg object-cover w-[150px] h-[200px]'
-                  />
-                </div>
-
-                <div className='flex-1 space-y-3'>
-                  <div className='flex flex-wrap gap-2'>
-                    {selectedMovie.vote_average > 0 && (
-                      <Badge className='bg-yellow-500 text-black text-xs'>
-                        <Star className='h-3 w-3 fill-current mr-1' />
-                        {selectedMovie.vote_average.toFixed(1)}
-                      </Badge>
-                    )}
-                    <Badge variant='outline' className='text-xs'>
-                      {selectedMovie.original_language.toUpperCase()}
-                    </Badge>
-                    <Badge variant='secondary' className='text-xs'>
-                      {new Date(
-                        selectedMovie.release_date
-                      ).toLocaleDateString()}
-                    </Badge>
-                    {selectedMovie.adult && (
-                      <Badge variant='destructive' className='text-xs'>
-                        18+
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className='space-y-1 text-xs sm:text-sm text-muted-foreground'>
-                    <p>Popularity: {selectedMovie.popularity.toFixed(0)}</p>
-                    <p>Votes: {selectedMovie.vote_count}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Overview */}
-              <div>
-                <h4 className='font-semibold text-sm'>Overview</h4>
-                <p className='text-sm text-muted-foreground leading-relaxed'>
-                  {selectedMovie.overview || 'No description available.'}
-                </p>
-              </div>
-
-              {/* Buttons */}
-              <div className='flex flex-wrap gap-2 pt-2'>
-                <Button
-                  onClick={handleViewDetails}
-                  className='flex-1 min-w-[150px]'
-                >
-                  View Full Details
-                </Button>
-                <Button
-                  variant='outline'
-                  onClick={() => addToWatchlist(selectedMovie)}
-                  size='icon'
-                  disabled={
-                    isInWatchlist(selectedMovie.id) && addingToWatchlist
-                  }
-                >
-                  {isInWatchlist(selectedMovie.id) ? (
-                    <Check className='h-4 w-4' />
-                  ) : (
-                    <div className=''>
-                      {addingToWatchlist ? (
-                        <Loader2 className='h-4 w-4 animate-spin' />
-                      ) : (
-                        <Plus className='h-4 w-4' />
-                      )}
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <UpcomingMovieDialog
+        selectedMovie={selectedMovie}
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        handleViewDetails={handleViewDetails}
+        addToWatchlist={addToWatchlist}
+        isInWatchlist={isInWatchlist}
+        addingToWatchlist={addingToWatchlist}
+      />
     </main>
   )
 }

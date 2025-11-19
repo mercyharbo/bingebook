@@ -4,13 +4,6 @@ import HeroSlider from '@/components/HeroSlider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -23,20 +16,14 @@ import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import type { Movie } from '@/types/movie'
 import { format, parseISO } from 'date-fns'
-import {
-  Calendar,
-  Check,
-  Loader2,
-  Plus,
-  SlidersHorizontal,
-  Star,
-} from 'lucide-react'
+import { Calendar, SlidersHorizontal } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import useSWR from 'swr'
 import DiscoverLoadingSkeleton from './DiscoverLoadingSkeleton'
+import DiscoverMovieDialog from './DiscoverMovieDialog'
 import DiscoverPagination from './DiscoverPagination'
 import FilterSheet from './FilterSheet'
 
@@ -94,8 +81,7 @@ export default function Discover() {
 
   const {
     selectedGenres,
-    minDate,
-    maxDate,
+    dateRange,
     searchQuery,
     sortBy,
     mediaType,
@@ -157,13 +143,13 @@ export default function Discover() {
     sort_by: sortBy,
     ...(mediaType === 'movie' ? { with_release_type: '2|3' } : {}),
     ...(selectedGenres.length > 0 && { with_genres: selectedGenres.join(',') }),
-    ...(minDate && {
+    ...(dateRange?.from && {
       [mediaType === 'movie' ? 'release_date.gte' : 'first_air_date.gte']:
-        minDate,
+        format(dateRange.from, 'yyyy-MM-dd'),
     }),
-    ...(maxDate && {
+    ...(dateRange?.to && {
       [mediaType === 'movie' ? 'release_date.lte' : 'first_air_date.lte']:
-        maxDate,
+        format(dateRange.to, 'yyyy-MM-dd'),
     }),
   })
 
@@ -309,7 +295,10 @@ export default function Discover() {
 
           <div className='flex gap-2 w-full lg:w-auto'>
             <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
-              <SelectTrigger className='w-[180px] py-2'>
+              <SelectTrigger
+                size='lg'
+                className='lg:w-[180px] py-2 border border-gray-400 '
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -320,14 +309,16 @@ export default function Discover() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant='outline' onClick={() => setIsFilterOpen(true)}>
-              <SlidersHorizontal className='h-4 w-4' />
+            <Button
+              variant='outline'
+              onClick={() => setIsFilterOpen(true)}
+              className='h-11'
+            >
+              <SlidersHorizontal className='size-4' />
               Filters
-              {(selectedGenres.length > 0 || minDate || maxDate) && (
+              {(selectedGenres.length > 0 || dateRange) && (
                 <Badge variant='secondary' className='ml-2'>
-                  {selectedGenres.length +
-                    (minDate ? 1 : 0) +
-                    (maxDate ? 1 : 0)}
+                  {selectedGenres.length + (dateRange ? 1 : 0)}
                 </Badge>
               )}
             </Button>
@@ -426,120 +417,16 @@ export default function Discover() {
 
         <FilterSheet />
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className='lg:max-w-[500px] h-[60vh] overflow-y-auto scrollbar-hide'>
-            <DialogHeader>
-              <DialogTitle className='text-xl font-bold'>
-                {mediaType === 'movie'
-                  ? selectedMovie?.title
-                  : selectedMovie?.name}
-              </DialogTitle>
-              <DialogDescription className='text-sm text-muted-foreground'>
-                Quick Preview
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedMovie && (
-              <div className='space-y-4'>
-                {/* Responsive media details */}
-                <div className='flex flex-col sm:flex-row gap-4'>
-                  <div className='flex-shrink-0 mx-auto sm:mx-0'>
-                    <Image
-                      src={
-                        selectedMovie.poster_path
-                          ? `https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`
-                          : '/sample-poster.jpg'
-                      }
-                      alt={
-                        (mediaType === 'movie'
-                          ? selectedMovie.title
-                          : selectedMovie.name) || 'Media item'
-                      }
-                      width={150}
-                      height={200}
-                      className='rounded-lg object-cover w-[150px] h-[200px]'
-                    />
-                  </div>
-
-                  <div className='flex-1 space-y-3'>
-                    <div className='flex flex-wrap gap-2'>
-                      {selectedMovie.vote_average > 0 && (
-                        <Badge className='bg-yellow-500 text-black text-xs'>
-                          <Star className='h-3 w-3 fill-current mr-1' />
-                          {selectedMovie.vote_average.toFixed(1)}
-                        </Badge>
-                      )}
-                      <Badge variant='outline' className='text-xs'>
-                        {selectedMovie.original_language.toUpperCase()}
-                      </Badge>
-                      <Badge variant='secondary' className='text-xs'>
-                        {(
-                          mediaType === 'movie'
-                            ? selectedMovie.release_date
-                            : selectedMovie.first_air_date
-                        )
-                          ? new Date(
-                              mediaType === 'movie'
-                                ? selectedMovie.release_date!
-                                : selectedMovie.first_air_date!
-                            ).toLocaleDateString()
-                          : 'No date'}
-                      </Badge>
-                      {selectedMovie.adult && (
-                        <Badge variant='destructive' className='text-xs'>
-                          18+
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className='space-y-1 text-xs sm:text-sm text-muted-foreground'>
-                      <p>Popularity: {selectedMovie.popularity.toFixed(0)}</p>
-                      <p>Votes: {selectedMovie.vote_count}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overview */}
-                <div>
-                  <h4 className='font-semibold text-sm'>Overview</h4>
-                  <p className='text-sm text-muted-foreground leading-relaxed'>
-                    {selectedMovie.overview || 'No description available.'}
-                  </p>
-                </div>
-
-                {/* Action buttons */}
-                <div className='flex flex-wrap gap-2 pt-2'>
-                  <Button
-                    onClick={handleViewDetails}
-                    className='flex-1 min-w-[150px]'
-                  >
-                    View Full Details
-                  </Button>
-                  <Button
-                    variant='outline'
-                    onClick={() => addToWatchlist(selectedMovie)}
-                    size='icon'
-                    disabled={
-                      isInWatchlist(selectedMovie.id) && addingToWatchlist
-                    }
-                  >
-                    {isInWatchlist(selectedMovie.id) ? (
-                      <Check className='h-4 w-4' />
-                    ) : (
-                      <div className=''>
-                        {addingToWatchlist ? (
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                        ) : (
-                          <Plus className='h-4 w-4' />
-                        )}
-                      </div>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <DiscoverMovieDialog
+          selectedMovie={selectedMovie}
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          handleViewDetails={handleViewDetails}
+          addToWatchlist={addToWatchlist}
+          isInWatchlist={isInWatchlist}
+          addingToWatchlist={addingToWatchlist}
+          mediaType={mediaType}
+        />
       </div>
     </main>
   )

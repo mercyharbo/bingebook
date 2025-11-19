@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useSearchStore } from '@/lib/store/searchStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
-import { ChevronDown, Menu, Search, Tv, X } from 'lucide-react'
+import { Menu, Search, Tv, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -170,7 +170,7 @@ export default function NavHeader() {
   }
 
   return (
-    <nav className='sticky top-5 rounded-lg z-50 flex justify-between items-center w-[80%] h-16 bg-gradient-to-r from-white to-blue-100 dark:bg-background/95 backdrop-blur px-5 lg:px-10 mx-auto'>
+    <nav className='sticky top-5 rounded-lg z-50 flex justify-between items-center w-[90%] lg:w-[80%] h-16 bg-gradient-to-r from-white to-blue-100 dark:bg-background/95 backdrop-blur px-5 lg:px-10 mx-auto'>
       <Link
         href='/'
         className={`font-bold text-xl lg:text-2xl flex items-center gap-2 transition-colors text-primary`}
@@ -214,7 +214,7 @@ export default function NavHeader() {
         </Link>
       </div>
 
-      <div className='flex items-center gap-4 relative'>
+      <div className='flex items-center gap-2 relative'>
         <div className='hidden lg:block relative' ref={searchRef}>
           <Input
             placeholder='Search movies & series...'
@@ -247,7 +247,7 @@ export default function NavHeader() {
         </Button>
 
         {loading ? (
-          <div className='h-8 w-8 animate-pulse bg-gray-200 rounded-full' />
+          <div className='size-8 animate-pulse bg-gray-200 rounded-full' />
         ) : user ? (
           <Button
             variant={'ghost'}
@@ -256,7 +256,7 @@ export default function NavHeader() {
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             data-profile-trigger
           >
-            <Avatar className='h-8 w-8'>
+            <Avatar className='size-8 rounded-full'>
               {user.user_metadata?.avatar_url && (
                 <AvatarImage
                   src={user.user_metadata.avatar_url}
@@ -271,8 +271,6 @@ export default function NavHeader() {
                 )}
               </AvatarFallback>
             </Avatar>
-
-            <ChevronDown />
           </Button>
         ) : (
           <div className='hidden items-center gap-5 lg:flex'>
@@ -311,11 +309,11 @@ export default function NavHeader() {
         <Sheet open={toggleMenu} onOpenChange={setToggleMenu}>
           <SheetTrigger asChild>
             <Button variant='ghost' size='icon' className='md:hidden'>
-              <Menu className='h-4 w-4' />
+              <Menu className='size-4' />
               <span className='sr-only'>Toggle menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side='left' className='sm:w-[80%]'>
+          <SheetContent side='left' className='sm:w-[70%]'>
             <Link
               href='/'
               className={`font-bold text-xl px-5 pt-4 lg:text-2xl flex items-center gap-2 transition-colors ${
@@ -384,7 +382,7 @@ export default function NavHeader() {
       </div>
 
       {isSearchOpen && (
-        <div className='absolute top-full left-0 right-0 lg:hidden bg-white dark:bg-background border-b border-gray-200 dark:border-gray-800 p-4 shadow-sm'>
+        <div className='absolute top-full left-0 right-0 lg:hidden bg-white rounded-xl dark:bg-background border-b border-gray-200 dark:border-gray-800 p-4 shadow-sm'>
           <div className='flex items-center gap-2'>
             <div className='relative flex-1' ref={searchRef}>
               <Input

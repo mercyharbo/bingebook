@@ -1,16 +1,7 @@
 'use client'
 
-import MarkMovieSeenButton from '@/components/markAsSeen'
-import TVProgressTracker from '@/components/TvProgressTracker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Pagination,
@@ -21,93 +12,52 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination' // Import shadcn Pagination components
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { useWatchlistPageStore } from '@/lib/store/watchlistPageStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
-import { Calendar, Eye, Info, Search, Star, Trash2 } from 'lucide-react'
+import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'react-toastify'
 import EmptyState from './empty-state'
+import FilterSheet from './FilterSheet'
 import WatchlistLoadingSkeleton from './loading-skeleton'
+import WatchlistItemDialog from './WatchlistItemDialog'
 
-interface TMDBGenre {
-  id: number
-  name: string
-}
-
-interface TMDBSeason {
-  id: number
-  season_number: number
-  episode_count: number
-  name: string
-}
-
-interface TMDBData {
-  id: number
-  title?: string
-  name?: string
-  poster_path?: string
-  backdrop_path?: string
-  overview?: string
-  release_date?: string
-  first_air_date?: string
-  genres?: TMDBGenre[]
-  vote_average?: number
-  vote_count?: number
-  popularity?: number
-  original_language?: string
-  original_title?: string
-  original_name?: string
-  adult?: boolean
-  budget?: number
-  revenue?: number
-  status?: string
-  tagline?: string
-  homepage?: string
-  number_of_seasons?: number
-  number_of_episodes?: number
-  in_production?: boolean
-  episode_run_time?: number[]
-  seasons?: TMDBSeason[]
-}
-
-export interface WatchlistItem {
-  id: number
-  user_id: string
-  tmdb_id: number
-  media_type: 'movie' | 'tv'
-  tmdb_data: TMDBData
-  poster_path: string | null
-  is_seen: boolean
-  seen_episodes: Record<string, string[]>
-  completed_seasons: number[]
-  created_at: string
-  last_updated: string
-}
+import { WatchlistItem } from '@/types/watchlist'
 
 export default function WatchlistPage() {
   const supabase = createClient()
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([])
-  const [activeFilter, setActiveFilter] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [sortBy, setSortBy] = useState<string>('added_date')
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1) // New state for current page
-  const itemsPerPage = 25 // Constant for items per page
+
+  // Store hooks
+  const {
+    watchlistItems,
+    setWatchlistItems,
+    updateWatchlistItem,
+    removeWatchlistItem,
+    addWatchlistItem,
+    activeFilter,
+    setActiveFilter,
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    isLoading,
+    setIsLoading,
+    currentPage,
+    setCurrentPage,
+    selectedItem,
+    setSelectedItem,
+    isDialogOpen,
+    setIsDialogOpen,
+    isFilterOpen,
+    setIsFilterOpen,
+  } = useWatchlistPageStore()
 
   const { isRemovingFromWatchlist, setIsRemovingFromWatchlist } =
     useWatchlistStore()
 
-  const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const itemsPerPage = 25 // Constant for items per page
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -213,9 +163,10 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         console.error('Error removing item:', error)
         toast.error('Failed to remove item')
       } else {
-        setWatchlistItems((prev) => prev.filter((item) => item.id !== id))
+        removeWatchlistItem(id)
         toast.success('Item removed from watchlist')
         setIsRemovingFromWatchlist(false)
+
         // Adjust current page if necessary
         const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
         if (currentPage > totalPages && totalPages > 0) {
@@ -229,17 +180,43 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
   }
 
   const handleMovieSeenToggle = (watchlistId: number, newStatus: boolean) => {
-    setWatchlistItems((prev) =>
-      prev.map((item) =>
-        item.id === watchlistId
-          ? {
-              ...item,
-              is_seen: newStatus,
-              last_updated: new Date().toISOString(),
-            }
-          : item
-      )
-    )
+    updateWatchlistItem(watchlistId, {
+      is_seen: newStatus,
+      last_updated: new Date().toISOString(),
+    })
+  }
+
+  const addToWatchlist = async (item: WatchlistItem) => {
+    try {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession()
+      if (sessionError || !sessionData.session) {
+        toast.error('Please log in to add to watchlist')
+        return
+      }
+
+      const { error } = await supabase.from('watchlist').insert({
+        user_id: sessionData.session.user.id,
+        tmdb_id: item.tmdb_id,
+        media_type: item.media_type,
+        tmdb_data: item.tmdb_data,
+        poster_path: item.poster_path,
+        is_seen: item.is_seen,
+        seen_episodes: item.seen_episodes,
+        completed_seasons: item.completed_seasons,
+      })
+
+      if (error) {
+        console.error('Error adding to watchlist:', error)
+        toast.error('Failed to add to watchlist')
+      } else {
+        addWatchlistItem({ ...item, id: Date.now() }) // Temporary ID
+        toast.success('Added to watchlist')
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred')
+    }
   }
 
   const filteredItems = watchlistItems
@@ -329,12 +306,9 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
 
   return (
     <main className='min-h-screen dark:bg-background p-5 lg:p-10 space-y-5'>
-      <header className='relative flex flex-col justify-center items-center gap-8 py-5 lg:py-8'>
+      <header className='relative flex flex-col md:flex-row justify-between items-center gap-8 py-5 lg:py-8'>
         {/* Hero Section */}
-        <div className='text-center space-y-4 px-4 max-w-3xl mx-auto'>
-          <div className='inline-flex items-center justify-center size-14 bg-blue-600 rounded-2xl shadow-lg mb-4'>
-            <Eye className='size-6 text-white' />
-          </div>
+        <div className='text-center md:text-left space-y-2 px-4 max-w-lg'>
           <h1 className='text-3xl font-bold text-gray-900 dark:text-white leading-tight'>
             Your Watchlist
           </h1>
@@ -345,63 +319,28 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         </div>
 
         {/* Controls Section */}
-        <div className='w-full max-w-4xl mx-auto space-y-6'>
+        <div className='w-full md:w-auto space-y-6'>
           {/* Search and Sort */}
-          <div className='flex flex-col lg:flex-row gap-4 max-w-2xl mx-auto'>
+          <div className='flex flex-col lg:flex-row gap-4 w-full lg:max-w-xl mx-auto'>
             <div className='relative flex-1'>
               <Search className='absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400' />
               <Input
                 placeholder='Search your watchlist...'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className='pl-12 h-11 text-base border-border dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-xl'
+                className='pl-12 h-11 text-base border border-gray-400 shadow-none '
               />
             </div>
             <div className='flex gap-3 w-full lg:w-auto'>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger
-                  size='lg'
-                  className='h-12 w-full lg:w-auto px-4 py-3 text-base border-gray-200 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-xl'
-                >
-                  <SelectValue placeholder='Sort by...' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='added_date'>Sort by Added Date</SelectItem>
-                  <SelectItem value='title'>Sort by Title</SelectItem>
-                  <SelectItem value='release_date'>
-                    Sort by Release Date
-                  </SelectItem>
-                  <SelectItem value='rating'>Sort by Rating</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Filter Buttons */}
-          <div className='flex flex-wrap justify-center gap-2 sm:gap-3'>
-            {filters.map((filter) => (
               <Button
-                key={filter.id}
-                variant={activeFilter === filter.id ? 'default' : 'outline'}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`text-sm px-4 py-2.5 h-auto min-h-[40px] rounded-full transition-all duration-200 ${
-                  activeFilter === filter.id
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg transform scale-105'
-                    : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
-                }`}
+                onClick={() => setIsFilterOpen(true)}
+                variant='outline'
+                className='h-12 w-full lg:w-auto bg-transparent shadow-none border border-gray-400 '
               >
-                <span className='font-medium'>{filter.label}</span>
-                <span
-                  className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === filter.id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  }`}
-                >
-                  {filter.count}
-                </span>
+                <Filter className='size-4' />
+                Filters
               </Button>
-            ))}
+            </div>
           </div>
         </div>
       </header>
@@ -410,11 +349,11 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         <EmptyState />
       ) : (
         <>
-          <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:px-14 3xl:grid-cols-6'>
+          <div className='grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:px-14 3xl:grid-cols-6'>
             {paginatedItems.map((item) => (
               <div
                 key={item.id}
-                className='snap-start shrink-0 w-64 group cursor-pointer'
+                className='snap-start shrink-0  group cursor-pointer'
                 onClick={() => {
                   setSelectedItem(item)
                   setIsDialogOpen(true)
@@ -485,121 +424,16 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
             ))}
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] overflow-y-auto scrollbar-hide'>
-              {selectedItem && (
-                <DialogHeader>
-                  <div className='flex flex-col md:flex-row gap-6'>
-                    <div className='flex justify-center md:justify-start'>
-                      <Image
-                        src={
-                          selectedItem.poster_path
-                            ? `https://image.tmdb.org/t/p/w300${selectedItem.poster_path}`
-                            : '/placeholder.svg'
-                        }
-                        alt={
-                          selectedItem.media_type === 'movie'
-                            ? selectedItem.tmdb_data.title || 'Movie poster'
-                            : selectedItem.tmdb_data.name || 'TV poster'
-                        }
-                        width={200}
-                        height={300}
-                        className='rounded-lg object-cover w-48 h-72 md:w-52 md:h-78 flex-shrink-0'
-                      />
-                    </div>
-                    <div className='flex-1 space-y-4 text-center md:text-left'>
-                      <div>
-                        <DialogTitle className='text-2xl mb-2'>
-                          {selectedItem.media_type === 'movie'
-                            ? selectedItem.tmdb_data.title || 'Untitled Movie'
-                            : selectedItem.tmdb_data.name || 'Untitled Series'}
-                        </DialogTitle>
-                        <div className='flex justify-center lg:justify-start items-center gap-4 text-sm text-muted-foreground mb-4'>
-                          <div className='flex items-center gap-1'>
-                            <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
-                            <span className='font-medium'>
-                              {(
-                                selectedItem.tmdb_data.vote_average || 0
-                              ).toFixed(1)}
-                            </span>
-                          </div>
-                          <div className='flex items-center gap-1'>
-                            <Calendar className='h-4 w-4' />
-                            <span>
-                              {new Date(
-                                selectedItem.media_type === 'movie'
-                                  ? selectedItem.tmdb_data.release_date || ''
-                                  : selectedItem.tmdb_data.first_air_date || ''
-                              ).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </span>
-                          </div>
-                          <Badge variant='outline'>
-                            {(
-                              selectedItem.tmdb_data.original_language || ''
-                            ).toUpperCase()}
-                          </Badge>
-                        </div>
-                        <DialogDescription className='text-base leading-relaxed'>
-                          {selectedItem.tmdb_data.overview}
-                        </DialogDescription>
-                      </div>
-                      <div className='flex flex-col sm:flex-row gap-3 pt-4 items-center md:items-start'>
-                        <Button
-                          size={'lg'}
-                          variant='destructive'
-                          className='w-full sm:w-auto'
-                          onClick={() => removeFromWatchlist(selectedItem.id)}
-                          disabled={isRemovingFromWatchlist}
-                        >
-                          <Trash2 className='size-4' />
-                          {isRemovingFromWatchlist
-                            ? 'Removing...'
-                            : 'Remove from Watchlist'}
-                        </Button>
-                        <Button
-                          size={'lg'}
-                          variant='outline'
-                          className='w-full sm:w-auto'
-                          asChild
-                        >
-                          <Link
-                            href={`/${selectedItem.media_type}/${selectedItem.tmdb_id}`}
-                          >
-                            <Info className='size-4' />
-                            View Details
-                          </Link>
-                        </Button>
-                      </div>
-                      {selectedItem.media_type === 'movie' ? (
-                        <MarkMovieSeenButton
-                          watchlistId={selectedItem.id}
-                          isSeen={selectedItem.is_seen}
-                          title={
-                            selectedItem.tmdb_data.title || 'Untitled Movie'
-                          }
-                          onToggle={(newStatus) =>
-                            handleMovieSeenToggle(selectedItem.id, newStatus)
-                          }
-                        />
-                      ) : (
-                        <TVProgressTracker
-                          watchlistId={selectedItem.id}
-                          tmdbId={selectedItem.tmdb_id}
-                          seasons={selectedItem.tmdb_data.seasons || []}
-                          seenEpisodes={selectedItem.seen_episodes}
-                          completedSeasons={selectedItem.completed_seasons}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </DialogHeader>
-              )}
-            </DialogContent>
-          </Dialog>
+          <WatchlistItemDialog
+            selectedItem={selectedItem}
+            isDialogOpen={isDialogOpen}
+            setIsDialogOpen={setIsDialogOpen}
+            removeFromWatchlist={removeFromWatchlist}
+            addToWatchlist={addToWatchlist}
+            handleMovieSeenToggle={handleMovieSeenToggle}
+            isRemovingFromWatchlist={isRemovingFromWatchlist}
+            watchlistItems={watchlistItems}
+          />
 
           {/* Pagination Component */}
           {totalPages > 1 && (
@@ -609,7 +443,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        setCurrentPage(Math.max(currentPage - 1, 1))
                       }
                       className={
                         currentPage === 1
@@ -661,7 +495,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                        setCurrentPage(Math.min(currentPage + 1, totalPages))
                       }
                       className={
                         currentPage === totalPages
@@ -676,6 +510,16 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
           )}
         </>
       )}
+
+      <FilterSheet
+        filters={filters}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        isOpen={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+      />
     </main>
   )
 }

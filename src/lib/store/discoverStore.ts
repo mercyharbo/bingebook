@@ -1,17 +1,16 @@
+import { DateRange } from 'react-day-picker'
 import { create } from 'zustand'
 
 interface DiscoverState {
   selectedGenres: string[]
-  minDate: string
-  maxDate: string
+  dateRange: DateRange | undefined
   searchQuery: string
   sortBy: string
   mediaType: 'movie' | 'tv'
   isFilterOpen: boolean
   setSelectedGenres: (genres: string[]) => void
   toggleGenre: (genreId: string) => void
-  setMinDate: (date: string) => void
-  setMaxDate: (date: string) => void
+  setDateRange: (range: DateRange | undefined) => void
   setSearchQuery: (query: string) => void
   setSortBy: (sort: string) => void
   setMediaType: (type: 'movie' | 'tv') => void
@@ -21,8 +20,7 @@ interface DiscoverState {
 
 export const useDiscoverStore = create<DiscoverState>((set) => ({
   selectedGenres: [],
-  minDate: '',
-  maxDate: '',
+  dateRange: undefined,
   searchQuery: '',
   sortBy: 'popularity.desc',
   mediaType: 'movie',
@@ -34,8 +32,7 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
         ? state.selectedGenres.filter((id) => id !== genreId)
         : [...state.selectedGenres, genreId],
     })),
-  setMinDate: (date) => set({ minDate: date }),
-  setMaxDate: (date) => set({ maxDate: date }),
+  setDateRange: (range) => set({ dateRange: range }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setMediaType: (type) => set({ mediaType: type, selectedGenres: [] }),
@@ -43,8 +40,7 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
   clearAllFilters: () =>
     set({
       selectedGenres: [],
-      minDate: '',
-      maxDate: '',
+      dateRange: undefined,
       searchQuery: '',
       sortBy: 'popularity.desc',
     }),

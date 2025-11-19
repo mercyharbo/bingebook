@@ -4,17 +4,14 @@ import MarkMovieSeenButton from '@/components/markAsSeen'
 import TVProgressTracker from '@/components/TvProgressTracker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import LoadingSpinner from '@/components/ui/loading-spinner'
 import {
   Pagination,
   PaginationContent,
@@ -33,8 +30,7 @@ import {
 } from '@/components/ui/select'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils'
-import { Calendar, Check, Clock, Eye, Search, Star, Trash2 } from 'lucide-react'
+import { Calendar, Eye, Info, Search, Star, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -109,6 +105,9 @@ export default function WatchlistPage() {
 
   const { isRemovingFromWatchlist, setIsRemovingFromWatchlist } =
     useWatchlistStore()
+
+  const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -413,11 +412,15 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         <>
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
             {paginatedItems.map((item) => (
-              <Card
+              <div
                 key={item.id}
                 className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2 gap-2 cursor-pointer'
+                onClick={() => {
+                  setSelectedItem(item)
+                  setIsDialogOpen(true)
+                }}
               >
-                <div className='relative'>
+                <div className='relative mb-3 overflow-hidden rounded-lg'>
                   <Image
                     src={
                       item.poster_path
@@ -430,179 +433,156 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
                         : item.tmdb_data.name || 'Untitled Series'
                     }
                     width={500}
-                    height={300}
-                    className='object-cover rounded-t-lg group-hover:scale-105 transition-transform duration-300 w-full h-72'
+                    height={750}
+                    className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
                   />
-                  <div className='absolute top-2 right-2 flex flex-row gap-2'>
-                    <Badge
-                      className={cn(
-                        'text-white text-xs rounded-3xl',
-                        item.is_seen ||
-                          (item.media_type === 'tv' &&
-                            Object.values(item.seen_episodes).reduce(
-                              (sum: number, eps: string[]) => sum + eps.length,
-                              0
-                            ) === item.tmdb_data.number_of_episodes)
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : item.media_type === 'tv' &&
-                            Object.keys(item.seen_episodes).length > 0
-                          ? 'bg-blue-500 hover:bg-blue-600'
-                          : 'bg-orange-500 hover:bg-orange-600'
-                      )}
-                    >
-                      {item.is_seen ||
-                      (item.media_type === 'tv' &&
-                        Object.values(item.seen_episodes).reduce(
-                          (sum: number, eps: string[]) => sum + eps.length,
-                          0
-                        ) === item.tmdb_data.number_of_episodes) ? (
-                        <Check className='size-3' />
-                      ) : item.media_type === 'tv' &&
-                        Object.keys(item.seen_episodes).length > 0 ? (
-                        <Eye className='size-3' />
-                      ) : (
-                        <Clock className='size-3' />
-                      )}
-                      <span className='ml-1 capitalize'>
-                        {item.is_seen ||
-                        (item.media_type === 'tv' &&
-                          Object.values(item.seen_episodes).reduce(
-                            (sum: number, eps: string[]) => sum + eps.length,
-                            0
-                          ) === item.tmdb_data.number_of_episodes)
-                          ? 'Watched'
-                          : item.media_type === 'tv' &&
-                            Object.keys(item.seen_episodes).length > 0
-                          ? 'Watching'
-                          : 'Planned'}
-                      </span>
-                    </Badge>
-                    <Badge variant='secondary' className='text-xs'>
-                      {item.media_type === 'movie' ? 'Movie' : 'TV'}
-                    </Badge>
-                  </div>
-                  <div className='absolute bottom-2 right-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center items-center gap-1 sm:gap-2 w-full px-2'>
-                    <Button
-                      variant={'outline'}
-                      size='sm'
-                      className='h-8 sm:h-10 px-2 text-xs sm:text-sm flex-1 sm:w-[80%] bg-black/50 text-white hover:bg-black/80 hover:text-white'
-                      asChild
-                    >
-                      <Link href={`/${item.media_type}/${item.tmdb_id}`}>
-                        <span className=''>View Details</span>
-                      </Link>
-                    </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size='sm'
-                          variant='destructive'
-                          className='h-8 sm:h-10 w-8 sm:w-12 p-0 flex-shrink-0'
-                        >
-                          <Trash2 className='size-3' />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Remove from Watchlist</DialogTitle>
-                          <DialogDescription>
-                            Are you sure you want to remove{' '}
-                            <span className='font-semibold'>
-                              {item.media_type === 'movie'
-                                ? item.tmdb_data.title || 'Untitled Movie'
-                                : item.tmdb_data.name || 'Untitled Series'}
-                            </span>
-                            from your watchlist?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className='flex gap-2 justify-end'>
-                          <Button
-                            variant='destructive'
-                            onClick={() => removeFromWatchlist(item.id)}
-                            disabled={isRemovingFromWatchlist}
-                          >
-                            {isRemovingFromWatchlist ? (
-                              <div className='flex items-center gap-2'>
-                                <LoadingSpinner />
-                                <span>Removing</span>
-                              </div>
-                            ) : (
-                              'Remove'
-                            )}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                </div>
+                <div className='space-y-1'>
+                  <h3 className='font-semibold text-base line-clamp-1'>
+                    {item.media_type === 'movie'
+                      ? item.tmdb_data.title || 'Untitled Movie'
+                      : item.tmdb_data.name || 'Untitled Series'}
+                  </h3>
+                  <div className='flex justify-between text-xs text-muted-foreground'>
+                    <span>
+                      {new Date(
+                        item.media_type === 'movie'
+                          ? item.tmdb_data.release_date || ''
+                          : item.tmdb_data.first_air_date || ''
+                      ).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    <span className='line-clamp-1'>
+                      {(item.tmdb_data.genres || [])
+                        .slice(0, 2)
+                        .map((genre: { name: string }) => genre.name)
+                        .filter(Boolean)
+                        .join(', ') || 'N/A'}
+                    </span>
                   </div>
                 </div>
-
-                <CardContent className='space-y-2 sm:space-y-3 px-2 sm:px-4 pb-4'>
-                  <div className='space-y-1.5 sm:space-y-2'>
-                    <h1 className='font-semibold text-base sm:text-lg line-clamp-1 leading-tight'>
-                      {item.media_type === 'movie'
-                        ? item.tmdb_data.title || 'Untitled Movie'
-                        : item.tmdb_data.name || 'Untitled Series'}
-                    </h1>
-                    <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
-                      <div className='flex items-center gap-1'>
-                        <Calendar className='size-3 flex-shrink-0' />
-                        <span className='truncate'>
-                          {new Date(
-                            item.media_type === 'movie'
-                              ? item.tmdb_data.release_date || ''
-                              : item.tmdb_data.first_air_date || ''
-                          ).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                      <div className='flex items-center gap-1'>
-                        <Star className='size-3 flex-shrink-0 fill-yellow-400 text-yellow-400' />
-                        <span>
-                          {(item.tmdb_data.vote_average || 0).toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {item.media_type === 'movie' ? (
-                    <MarkMovieSeenButton
-                      watchlistId={item.id}
-                      isSeen={item.is_seen}
-                      title={item.tmdb_data.title || 'Untitled Movie'}
-                      onToggle={(newStatus) =>
-                        handleMovieSeenToggle(item.id, newStatus)
-                      }
-                    />
-                  ) : (
-                    <TVProgressTracker
-                      watchlistId={item.id}
-                      tmdbId={item.tmdb_id}
-                      seasons={item.tmdb_data.seasons || []}
-                      seenEpisodes={item.seen_episodes}
-                      completedSeasons={item.completed_seasons}
-                    />
-                  )}
-
-                  <div className='flex flex-wrap gap-1.5'>
-                    {(item.tmdb_data.genres || [])
-                      .slice(0, 2)
-                      .map((genre: { name: string }) => (
-                        <Badge
-                          key={genre.name}
-                          variant='outline'
-                          className='text-xs px-2 py-1 leading-tight rounded-full border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300'
-                        >
-                          {genre.name}
-                        </Badge>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
+              </div>
             ))}
           </div>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] overflow-y-auto scrollbar-hide'>
+              {selectedItem && (
+                <DialogHeader>
+                  <div className='flex flex-col md:flex-row gap-6'>
+                    <div className='flex justify-center md:justify-start'>
+                      <Image
+                        src={
+                          selectedItem.poster_path
+                            ? `https://image.tmdb.org/t/p/w300${selectedItem.poster_path}`
+                            : '/placeholder.svg'
+                        }
+                        alt={
+                          selectedItem.media_type === 'movie'
+                            ? selectedItem.tmdb_data.title || 'Movie poster'
+                            : selectedItem.tmdb_data.name || 'TV poster'
+                        }
+                        width={200}
+                        height={300}
+                        className='rounded-lg object-cover w-48 h-72 md:w-52 md:h-78 flex-shrink-0'
+                      />
+                    </div>
+                    <div className='flex-1 space-y-4 text-center md:text-left'>
+                      <div>
+                        <DialogTitle className='text-2xl mb-2'>
+                          {selectedItem.media_type === 'movie'
+                            ? selectedItem.tmdb_data.title || 'Untitled Movie'
+                            : selectedItem.tmdb_data.name || 'Untitled Series'}
+                        </DialogTitle>
+                        <div className='flex justify-center lg:justify-start items-center gap-4 text-sm text-muted-foreground mb-4'>
+                          <div className='flex items-center gap-1'>
+                            <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
+                            <span className='font-medium'>
+                              {(
+                                selectedItem.tmdb_data.vote_average || 0
+                              ).toFixed(1)}
+                            </span>
+                          </div>
+                          <div className='flex items-center gap-1'>
+                            <Calendar className='h-4 w-4' />
+                            <span>
+                              {new Date(
+                                selectedItem.media_type === 'movie'
+                                  ? selectedItem.tmdb_data.release_date || ''
+                                  : selectedItem.tmdb_data.first_air_date || ''
+                              ).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          </div>
+                          <Badge variant='outline'>
+                            {(
+                              selectedItem.tmdb_data.original_language || ''
+                            ).toUpperCase()}
+                          </Badge>
+                        </div>
+                        <DialogDescription className='text-base leading-relaxed'>
+                          {selectedItem.tmdb_data.overview}
+                        </DialogDescription>
+                      </div>
+                      <div className='flex flex-col sm:flex-row gap-3 pt-4 items-center md:items-start'>
+                        <Button
+                          size={'lg'}
+                          variant='destructive'
+                          className='w-full sm:w-auto'
+                          onClick={() => removeFromWatchlist(selectedItem.id)}
+                          disabled={isRemovingFromWatchlist}
+                        >
+                          <Trash2 className='size-4' />
+                          {isRemovingFromWatchlist
+                            ? 'Removing...'
+                            : 'Remove from Watchlist'}
+                        </Button>
+                        <Button
+                          size={'lg'}
+                          variant='outline'
+                          className='w-full sm:w-auto'
+                          asChild
+                        >
+                          <Link
+                            href={`/${selectedItem.media_type}/${selectedItem.tmdb_id}`}
+                          >
+                            <Info className='size-4' />
+                            View Details
+                          </Link>
+                        </Button>
+                      </div>
+                      {selectedItem.media_type === 'movie' ? (
+                        <MarkMovieSeenButton
+                          watchlistId={selectedItem.id}
+                          isSeen={selectedItem.is_seen}
+                          title={
+                            selectedItem.tmdb_data.title || 'Untitled Movie'
+                          }
+                          onToggle={(newStatus) =>
+                            handleMovieSeenToggle(selectedItem.id, newStatus)
+                          }
+                        />
+                      ) : (
+                        <TVProgressTracker
+                          watchlistId={selectedItem.id}
+                          tmdbId={selectedItem.tmdb_id}
+                          seasons={selectedItem.tmdb_data.seasons || []}
+                          seenEpisodes={selectedItem.seen_episodes}
+                          completedSeasons={selectedItem.completed_seasons}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </DialogHeader>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Pagination Component */}
           {totalPages > 1 && (

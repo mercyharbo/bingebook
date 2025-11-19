@@ -43,9 +43,9 @@ export default function HeroSlider({
   }
 
   return (
-    <section className='relative h-[70vh] overflow-hidden rounded-2xl'>
+    <section className='relative h-[90vh] w-full overflow-hidden'>
       <div className='relative w-full h-full'>
-        <section className='relative h-[70vh] overflow-hidden rounded-2xl mx-5 lg:mx-10'>
+        <section className='relative h-screen overflow-hidden'>
           <div className='relative w-full h-full'>
             <div
               className='flex h-full transition-transform duration-700 ease-in-out'
@@ -60,7 +60,9 @@ export default function HeroSlider({
                     src={
                       movie.backdrop_path
                         ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-                        : '/placeholder.svg?height=600&width=1200&text=No+Image'
+                        : movie.poster_path
+                        ? `https://image.tmdb.org/t/p/original${movie.poster_path}`
+                        : '/sample-poster.jpg'
                     }
                     alt={movie.title || movie.name || 'Media backdrop'}
                     fill
@@ -71,7 +73,7 @@ export default function HeroSlider({
 
                   {/* Content */}
                   <div className='absolute inset-0 flex items-center z-10'>
-                    <div className='container mx-auto px-8 lg:px-16'>
+                    <div className='w-[80%] mx-auto'>
                       <div className='max-w-2xl space-y-6'>
                         <div className='space-y-2'>
                           <Badge className='bg-blue-600 hover:bg-blue-700 text-white rounded-3xl px-3 py-1'>

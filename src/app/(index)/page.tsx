@@ -159,7 +159,7 @@ export default function HomePageComp() {
   }
 
   return (
-    <main className='space-y-10 pt-5'>
+    <main className='-mt-16'>
       {/* Hero Section */}
       {moviesList && moviesList.length > 0 && (
         <HeroSlider

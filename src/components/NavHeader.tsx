@@ -170,17 +170,13 @@ export default function NavHeader() {
   }
 
   return (
-    <nav className='sticky top-0 z-50 flex justify-between items-center w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 px-5 lg:px-10 mx-auto'>
+    <nav className='sticky top-5 rounded-lg z-50 flex justify-between items-center w-[80%] h-16 bg-gradient-to-r from-white to-blue-100 dark:bg-background/95 backdrop-blur px-5 lg:px-10 mx-auto'>
       <Link
         href='/'
-        className={`font-bold text-xl lg:text-2xl flex items-center gap-2 transition-colors ${
-          isActive('/')
-            ? 'text-primary font-semibold'
-            : 'text-primary hover:text-primary/80'
-        }`}
+        className={`font-bold text-xl lg:text-2xl flex items-center gap-2 transition-colors text-primary`}
       >
         <Tv />
-        ShowTrackr
+        BingeBook
       </Link>
 
       <div className='hidden md:flex items-center gap-8'>
@@ -190,7 +186,7 @@ export default function NavHeader() {
             className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
               isActive('/watchlist')
                 ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
             Watchlist
@@ -201,7 +197,7 @@ export default function NavHeader() {
           className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             isActive('/discover')
               ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+              : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
           Discover
@@ -211,7 +207,7 @@ export default function NavHeader() {
           className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             isActive('/upcoming')
               ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+              : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
           Upcoming
@@ -222,7 +218,7 @@ export default function NavHeader() {
         <div className='hidden lg:block relative' ref={searchRef}>
           <Input
             placeholder='Search movies & series...'
-            className='w-64 h-9'
+            className='w-64 h-9 border border-gray-300'
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => setShowResults(!!searchQuery)}
@@ -329,7 +325,7 @@ export default function NavHeader() {
               }`}
             >
               <Tv />
-              ShowTrackr
+              BingeBook
             </Link>
 
             <div className='flex flex-col gap-3 pt-[3rem] px-5'>
@@ -339,7 +335,7 @@ export default function NavHeader() {
                   className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                     isActive('/watchlist')
                       ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                      : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                   onClick={() => setToggleMenu(false)}
                 >
@@ -351,7 +347,7 @@ export default function NavHeader() {
                 className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                   isActive('/discover')
                     ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 onClick={() => setToggleMenu(false)}
               >
@@ -362,7 +358,7 @@ export default function NavHeader() {
                 className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                   isActive('/upcoming')
                     ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                    : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 onClick={() => setToggleMenu(false)}
               >
@@ -375,7 +371,7 @@ export default function NavHeader() {
                   className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
                     isActive('/auth/login')
                       ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                      : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                   onClick={() => setToggleMenu(false)}
                 >
@@ -393,7 +389,7 @@ export default function NavHeader() {
             <div className='relative flex-1' ref={searchRef}>
               <Input
                 placeholder='Search movies & series...'
-                className='w-full'
+                className='w-full border border-gray-600'
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 onFocus={() => setShowResults(!!searchQuery)}

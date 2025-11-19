@@ -2,7 +2,6 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import type { Movie } from '@/types/movie'
 import { format, parseISO } from 'date-fns'
-import { Info, Plus, Star } from 'lucide-react'
+import { Calendar, Info, Plus, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -38,6 +37,28 @@ export default function TopRatedTVShows({
     setIsDialogOpen(true)
   }
 
+  const genreMap: Record<number, string> = {
+    28: 'Action',
+    12: 'Adventure',
+    16: 'Animation',
+    35: 'Comedy',
+    80: 'Crime',
+    99: 'Documentary',
+    18: 'Drama',
+    10751: 'Family',
+    14: 'Fantasy',
+    36: 'History',
+    27: 'Horror',
+    10402: 'Music',
+    9648: 'Mystery',
+    10749: 'Romance',
+    878: 'Science Fiction',
+    10770: 'TV Movie',
+    53: 'Thriller',
+    10752: 'War',
+    37: 'Western',
+  }
+
   return (
     <section className='space-y-5'>
       <div className='flex items-center justify-between'>
@@ -55,51 +76,41 @@ export default function TopRatedTVShows({
         {topRated?.slice(0, 10).map((item: Movie) => (
           <div
             key={item.id}
-            className='snap-start shrink-0 w-72'
+            className='snap-start shrink-0 w-64 group cursor-pointer'
             onClick={() => openDialog(item)}
           >
-            <Card className='group gap-0 hover:shadow-lg transition-all h-full flex flex-col duration-300 overflow-hidden p-0 cursor-pointer'>
-              <div className='relative'>
-                <Image
-                  src={
-                    item.poster_path
-                      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                      : '/placeholder.svg'
-                  }
-                  alt={item.name || 'TV Show poster'}
-                  width={500}
-                  height={500}
-                  className='w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300'
-                />
-                <div className='absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors' />
+            <div className='relative mb-3 overflow-hidden rounded-lg'>
+              <Image
+                src={
+                  item.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                    : '/placeholder.svg'
+                }
+                alt={item.name || 'TV Show poster'}
+                width={500}
+                height={750}
+                className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
+              />
+            </div>
+            <div className='space-y-1'>
+              <h3 className='font-semibold text-base line-clamp-1'>
+                {item.name}
+              </h3>
+              <div className='flex justify-between text-xs text-muted-foreground'>
+                <span>
+                  {item.first_air_date
+                    ? format(parseISO(item.first_air_date), 'MMM d, yyyy')
+                    : 'N/A'}
+                </span>
+                <span className='line-clamp-1'>
+                  {item.genre_ids
+                    .slice(0, 2)
+                    .map((id) => genreMap[id])
+                    .filter(Boolean)
+                    .join(', ') || 'N/A'}
+                </span>
               </div>
-              <CardContent className='p-3 space-y-2 flex-1 flex flex-col justify-between'>
-                <h3 className='font-semibold text-lg line-clamp-2 mb-1'>
-                  {item.name}
-                </h3>
-                <p className='text-sm text-muted-foreground line-clamp-2 leading-relaxed'>
-                  {item.overview}
-                </p>
-                <div className='flex items-center justify-between text-sm text-muted-foreground'>
-                  <div className='flex items-center gap-2'>
-                    <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
-                    <span className='font-medium'>
-                      {item.vote_average.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <span>
-                      {item.first_air_date
-                        ? format(parseISO(item.first_air_date), 'yyyy')
-                        : 'N/A'}
-                    </span>
-                    <span className='text-xs bg-muted px-2 py-1 rounded'>
-                      {item.original_language.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
         ))}
       </div>
@@ -135,7 +146,7 @@ export default function TopRatedTVShows({
                         </span>
                       </div>
                       <div className='flex items-center gap-1'>
-                        <span className='h-4 w-4' />
+                        <Calendar className='h-4 w-4' />
                         <span>
                           {selectedShow.first_air_date
                             ? format(
@@ -155,6 +166,7 @@ export default function TopRatedTVShows({
                   </div>
                   <div className='flex flex-col sm:flex-row gap-3 pt-4 items-center md:items-start'>
                     <Button
+                      size={'lg'}
                       className={`w-full sm:w-auto ${
                         isInWatchlist(selectedShow.id)
                           ? 'bg-green-600 hover:bg-green-700 text-white'
@@ -165,7 +177,7 @@ export default function TopRatedTVShows({
                         addingToWatchlist || isInWatchlist(selectedShow.id)
                       }
                     >
-                      <Plus className='h-4 w-4 mr-2' />
+                      <Plus className='size-4' />
                       {addingToWatchlist
                         ? 'Adding...'
                         : isInWatchlist(selectedShow.id)
@@ -173,12 +185,13 @@ export default function TopRatedTVShows({
                         : 'Add to Watchlist'}
                     </Button>
                     <Button
+                      size={'lg'}
                       variant='outline'
                       className='w-full sm:w-auto'
                       asChild
                     >
                       <Link href={`/tv/${selectedShow.id}`}>
-                        <Info className='h-4 w-4 mr-2' />
+                        <Info className='size-4' />
                         View Details
                       </Link>
                     </Button>

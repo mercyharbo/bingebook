@@ -410,7 +410,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         <EmptyState />
       ) : (
         <>
-          <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
+          <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:px-14 3xl:grid-cols-6'>
             {paginatedItems.map((item) => (
               <div
                 key={item.id}
@@ -436,6 +436,23 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
                     height={750}
                     className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
                   />
+                  <Badge className='absolute top-2 left-2 bg-black/70 text-white text-xs'>
+                    {item.media_type === 'movie' ? 'Movie' : 'TV'}
+                  </Badge>
+                  {(() => {
+                    const isSeen =
+                      item.media_type === 'movie'
+                        ? item.is_seen
+                        : Object.values(item.seen_episodes).reduce(
+                            (sum: number, eps: string[]) => sum + eps.length,
+                            0
+                          ) === (item.tmdb_data.number_of_episodes || 0)
+                    return isSeen ? (
+                      <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
+                        Watched
+                      </Badge>
+                    ) : null
+                  })()}
                 </div>
                 <div className='space-y-1'>
                   <h3 className='font-semibold text-base line-clamp-1'>

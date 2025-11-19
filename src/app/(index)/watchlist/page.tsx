@@ -410,11 +410,11 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         <EmptyState />
       ) : (
         <>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
+          <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
             {paginatedItems.map((item) => (
               <div
                 key={item.id}
-                className='group hover:shadow-xl transition-all duration-300 overflow-hidden p-2 gap-2 cursor-pointer'
+                className='snap-start shrink-0 w-64 group cursor-pointer'
                 onClick={() => {
                   setSelectedItem(item)
                   setIsDialogOpen(true)

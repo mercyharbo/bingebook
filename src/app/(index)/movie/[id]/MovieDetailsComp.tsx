@@ -362,9 +362,9 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   }
 
   return (
-    <div className='min-h-screen'>
+    <div className='min-h-screen -mt-16'>
       {/* Hero Section */}
-      <div className='relative h-[80vh] overflow-hidden'>
+      <div className='relative h-[90vh] overflow-hidden'>
         {movie.backdrop_path && (
           <Image
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
@@ -577,21 +577,24 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
           <div className='md:col-span-2'>
             <Tabs defaultValue='overview' className='w-full'>
               <TabsList className='grid grid-cols-4 w-full h-12 overflow-x-auto snap-x snap-mandatory scrollbar-hide'>
-                <TabsTrigger value='overview' className='snap-start'>
+                <TabsTrigger value='overview' className='snap-start '>
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value='cast' className='snap-start'>
+                <TabsTrigger value='cast' className='snap-start '>
                   Cast & Crew
                 </TabsTrigger>
                 <TabsTrigger value='videos' className='snap-start'>
                   Videos
                 </TabsTrigger>
-                <TabsTrigger value='reviews' className='snap-start'>
+                <TabsTrigger value='reviews' className='snap-start '>
                   Reviews
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value='overview' className='space-y-6'>
+              <TabsContent
+                value='overview'
+                className='space-y-6 bg-white p-5 rounded-lg'
+              >
                 <div>
                   <h2 className='text-xl sm:text-2xl font-bold mb-4'>
                     Overview
@@ -644,17 +647,20 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                 )}
               </TabsContent>
 
-              <TabsContent value='cast' className='space-y-6'>
+              <TabsContent
+                value='cast'
+                className='space-y-6 bg-white p-5 rounded-lg'
+              >
                 <div className='space-y-4'>
                   <h2 className='text-xl sm:text-2xl font-bold'>Cast</h2>
-                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
+                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 3xl:grid-cols-5 gap-4'>
                     {cast.map((actor) => (
                       <Link key={actor.id} href={`/person/${actor.id}`}>
                         <Card
                           key={actor.id}
-                          className='text-center p-0 rounded-2xl'
+                          className='text-center p-0 rounded-2xl overflow-hidden group'
                         >
-                          <CardContent className='p-1'>
+                          <CardContent className='p-0 relative'>
                             <Image
                               src={
                                 actor.profile_path
@@ -663,16 +669,17 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                               }
                               alt={actor.name}
                               width={185}
-                              height={185}
+                              height={350}
                               quality={100}
-                              className='rounded-lg object-cover w-full'
+                              className='object-cover w-full h-[280px] sm:h-[350px]'
                               sizes='(max-width: 640px) 50vw, 33vw'
                             />
-                            <div className='space-y-1 flex flex-col justify-start items-start text-left px-4 py-2'>
-                              <h4 className='font-semibold text-xs sm:text-sm'>
+                            <div className='absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none'></div>
+                            <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3'>
+                              <h4 className='font-semibold text-xs sm:text-sm text-white'>
                                 {actor.name}
                               </h4>
-                              <p className='text-xs text-muted-foreground'>
+                              <p className='text-xs text-gray-200'>
                                 {actor.character}
                               </p>
                             </div>
@@ -684,7 +691,10 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                 </div>
               </TabsContent>
 
-              <TabsContent value='videos' className='space-y-6'>
+              <TabsContent
+                value='videos'
+                className='space-y-6 bg-white p-5 rounded-lg'
+              >
                 <div className='space-y-4'>
                   <h2 className='text-xl sm:text-2xl font-bold'>
                     Videos & Trailers
@@ -725,7 +735,10 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                 </div>
               </TabsContent>
 
-              <TabsContent value='reviews' className='space-y-6'>
+              <TabsContent
+                value='reviews'
+                className='space-y-6 bg-white p-5 rounded-lg'
+              >
                 <div className='space-y-4'>
                   <h2 className='text-xl sm:text-2xl font-bold mb-4'>
                     Reviews

@@ -6,12 +6,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { Movie } from '@/types/movie'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Info, Plus, Star } from 'lucide-react'
+import { Calendar, Info, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -114,89 +113,77 @@ export default function UpcomingReleases({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] overflow-y-auto scrollbar-hide'>
+        <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide'>
           {selectedMovie && (
-            <DialogHeader>
-              <div className='flex flex-col md:flex-row gap-6'>
-                <div className='flex justify-center md:justify-start'>
-                  <Image
-                    src={
-                      selectedMovie.poster_path
-                        ? `https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`
-                        : '/placeholder.svg'
-                    }
-                    alt={selectedMovie.title || 'Movie poster'}
-                    width={200}
-                    height={300}
-                    className='rounded-lg object-cover w-48 h-72 md:w-52 md:h-78 flex-shrink-0'
-                  />
-                </div>
-                <div className='flex-1 space-y-4 text-center md:text-left'>
-                  <div>
-                    <DialogTitle className='text-2xl mb-2'>
-                      {selectedMovie.title}
-                    </DialogTitle>
-                    <div className='flex justify-center lg:justify-start items-center gap-4 text-sm text-muted-foreground mb-4'>
-                      <div className='flex items-center gap-1'>
-                        <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
-                        <span className='font-medium'>
-                          {selectedMovie.vote_average.toFixed(1)}
-                        </span>
-                      </div>
-                      <div className='flex items-center gap-1'>
-                        <Calendar className='h-4 w-4' />
-                        <span>
-                          {selectedMovie.release_date
-                            ? format(
-                                parseISO(selectedMovie.release_date),
-                                'MMM d, yyyy'
-                              )
-                            : 'N/A'}
-                        </span>
-                      </div>
-                      <Badge variant='outline'>
-                        {selectedMovie.original_language.toUpperCase()}
-                      </Badge>
+            <div className='flex flex-col md:flex-row gap-6 h-full'>
+              <div className='flex justify-center md:justify-start lg:flex-shrink-0'>
+                <Image
+                  src={
+                    selectedMovie.poster_path
+                      ? `https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`
+                      : '/placeholder.svg'
+                  }
+                  alt={selectedMovie.title || 'Movie poster'}
+                  width={200}
+                  height={300}
+                  className='rounded-t-lg md:rounded-l-lg lg:rounded-l-lg lg:rounded-t-none object-cover w-full h-72 md:w-52 md:h-78 lg:w-64 lg:h-full flex-shrink-0'
+                />
+              </div>
+              <div className='flex-1 space-y-4 text-left px-4 pb-4 md:text-left lg:py-4 lg:overflow-y-auto lg:scrollbar-hide lg:max-h-[50vh]'>
+                <div className='space-y-3'>
+                  <DialogTitle className='text-lg font-semibold'>
+                    {selectedMovie.title}
+                  </DialogTitle>
+                  <div className='flex justify-start items-start gap-4 text-sm text-muted-foreground'>
+                    <div className='flex items-center gap-1'>
+                      <Star className='size-4 fill-yellow-400 text-yellow-400' />
+                      <span className='font-medium'>
+                        {selectedMovie.vote_average.toFixed(1)}
+                      </span>
                     </div>
-                    <DialogDescription className='text-base leading-relaxed'>
-                      {selectedMovie.overview}
-                    </DialogDescription>
+                    <div className='flex items-center gap-1'>
+                      <Calendar className='size-4' />
+                      <span>
+                        {selectedMovie.release_date
+                          ? format(
+                              parseISO(selectedMovie.release_date),
+                              'MMM d, yyyy'
+                            )
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <Badge variant='outline'>
+                      {selectedMovie.original_language.toUpperCase()}
+                    </Badge>
                   </div>
-                  <div className='flex flex-col sm:flex-row gap-3 pt-4 items-center md:items-start'>
-                    <Button
-                      size={'lg'}
-                      className={`w-full sm:w-auto ${
-                        isInWatchlist(selectedMovie.id)
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
-                      onClick={() => addToWatchlist(selectedMovie)}
-                      disabled={
-                        addingToWatchlist || isInWatchlist(selectedMovie.id)
-                      }
-                    >
-                      <Plus className='size-4' />
-                      {addingToWatchlist
-                        ? 'Adding...'
-                        : isInWatchlist(selectedMovie.id)
-                        ? 'Added to Watchlist'
-                        : 'Add to Watchlist'}
-                    </Button>
-                    <Button
-                      size={'lg'}
-                      variant='outline'
-                      className='w-full sm:w-auto'
-                      asChild
-                    >
-                      <Link href={`/movie/${selectedMovie.id}`}>
-                        <Info className='size-4' />
-                        View Details
-                      </Link>
-                    </Button>
-                  </div>
+                  <DialogDescription className='text-sm leading-relaxed'>
+                    {selectedMovie.overview}
+                  </DialogDescription>
+                </div>
+                <div className='grid grid-cols-2 gap-4'>
+                  <Button
+                    size={'lg'}
+                    variant='default'
+                    onClick={() => addToWatchlist(selectedMovie)}
+                    disabled={
+                      addingToWatchlist || isInWatchlist(selectedMovie.id)
+                    }
+                  >
+                    {addingToWatchlist
+                      ? 'Adding...'
+                      : isInWatchlist(selectedMovie.id)
+                      ? 'Added to Watchlist'
+                      : 'Add to Watchlist'}
+                  </Button>
+                  <Button size={'lg'} variant='outline' asChild>
+                    <Link href={`/movie/${selectedMovie.id}`}>
+                      <Info className='size-4' />
+                      View Details
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            </DialogHeader>
+            </div>
           )}
         </DialogContent>
       </Dialog>

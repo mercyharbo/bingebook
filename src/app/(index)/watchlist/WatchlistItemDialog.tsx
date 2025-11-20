@@ -4,7 +4,12 @@ import MarkMovieSeenButton from '@/components/markAsSeen'
 import TVProgressTracker from '@/components/TvProgressTracker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { WatchlistItem } from '@/types/watchlist'
 import { Calendar, Info, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -37,10 +42,10 @@ export default function WatchlistItemDialog({
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] p-0 overflow-y-auto space-y-0 gap-0 scrollbar-hide'>
+      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide'>
         {selectedItem && (
-          <div className='flex flex-col md:flex-row gap-6'>
-            <div className='flex justify-center md:justify-start'>
+          <div className='flex flex-col md:flex-row gap-6 h-full'>
+            <div className='flex justify-center md:justify-start lg:flex-shrink-0'>
               <Image
                 src={
                   selectedItem.poster_path
@@ -55,13 +60,13 @@ export default function WatchlistItemDialog({
                 width={500}
                 height={300}
                 quality={100}
-                className='rounded-t-lg object-cover w-full h-72 md:w-52 md:h-78 flex-shrink-0'
+                className='rounded-t-lg md:rounded-l-lg lg:rounded-l-lg lg:rounded-t-none object-cover w-full h-72 md:w-52 md:h-78 lg:w-64 lg:h-full flex-shrink-0'
               />
             </div>
 
-            <div className='flex-1 space-y-4 text-left px-4 pb-4 md:text-left'>
+            <div className='flex-1 space-y-4 text-left px-4 pb-4 md:text-left lg:py-4 lg:overflow-y-auto lg:scrollbar-hide lg:max-h-[50vh]'>
               <div className='space-y-3'>
-                <DialogTitle className='text-2xl font-semibold '>
+                <DialogTitle className='text-lg font-semibold'>
                   {selectedItem.media_type === 'movie'
                     ? selectedItem.tmdb_data.title || 'Untitled Movie'
                     : selectedItem.tmdb_data.name || 'Untitled Series'}
@@ -94,9 +99,9 @@ export default function WatchlistItemDialog({
                     ).toUpperCase()}
                   </Badge>
                 </div>
-                <p className='text-base leading-relaxed'>
+                <DialogDescription className='text-sm leading-relaxed'>
                   {selectedItem.tmdb_data.overview}
-                </p>
+                </DialogDescription>
               </div>
               <div className='grid grid-cols-2 gap-4'>
                 {isInWatchlist ? (

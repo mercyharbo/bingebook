@@ -2,7 +2,12 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import type { Movie } from '@/types/movie'
 import { Check, Loader2, Plus, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -30,10 +35,10 @@ export default function DiscoverMovieDialog({
 }: DiscoverMovieDialogProps) {
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <DialogContent className='lg:max-w-[500px] h-[60vh] p-0 overflow-y-auto scrollbar-hide'>
+      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide'>
         {selectedMovie && (
-          <div className='space-y-4'>
-            <div className='flex-shrink-0 mx-auto sm:mx-0 w-full'>
+          <div className='flex flex-col lg:flex-row gap-6 h-full'>
+            <div className='flex justify-center lg:justify-start lg:flex-shrink-0'>
               <Image
                 src={
                   selectedMovie.poster_path
@@ -47,13 +52,13 @@ export default function DiscoverMovieDialog({
                 }
                 width={150}
                 height={200}
-                className='rounded-t-lg object-cover w-full h-[250px]'
+                className='rounded-t-lg lg:rounded-l-lg lg:rounded-t-none object-cover w-full h-[250px] lg:w-64 lg:h-full flex-shrink-0'
               />
             </div>
 
-            <div className='space-y-4 px-4 pb-10'>
+            <div className='flex-1 space-y-4 px-4 pb-10 lg:py-4 lg:overflow-y-auto lg:scrollbar-hide lg:max-h-[50vh]'>
               <div className='flex-1 space-y-3'>
-                <DialogTitle className='text-2xl font-bold'>
+                <DialogTitle className='text-lg font-bold'>
                   {mediaType === 'movie'
                     ? selectedMovie?.title
                     : selectedMovie?.name}
@@ -88,11 +93,11 @@ export default function DiscoverMovieDialog({
                     </Badge>
                   )}
                 </div>
-              </div>
 
-              <p className='text-sm text-muted-foreground leading-relaxed'>
-                {selectedMovie.overview || 'No description available.'}
-              </p>
+                <DialogDescription className='text-sm text-muted-foreground leading-relaxed'>
+                  {selectedMovie.overview || 'No description available.'}
+                </DialogDescription>
+              </div>
 
               {/* Action buttons */}
               <div className='flex flex-wrap gap-2 pt-2'>

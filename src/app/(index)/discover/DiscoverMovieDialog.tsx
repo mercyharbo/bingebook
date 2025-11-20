@@ -35,7 +35,7 @@ export default function DiscoverMovieDialog({
 }: DiscoverMovieDialogProps) {
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide'>
+      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide overflow-y-auto lg:overflow-hidden'>
         {selectedMovie && (
           <div className='flex flex-col lg:flex-row gap-6 h-full'>
             <div className='flex justify-center lg:justify-start lg:flex-shrink-0'>

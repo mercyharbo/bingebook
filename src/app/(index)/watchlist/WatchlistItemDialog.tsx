@@ -42,7 +42,7 @@ export default function WatchlistItemDialog({
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide'>
+      <DialogContent className='lg:min-w-2xl w-[95%] max-h-[70vh] lg:max-h-[50vh] p-0 space-y-0 gap-0 scrollbar-hide overflow-y-auto lg:overflow-hidden'>
         {selectedItem && (
           <div className='flex flex-col md:flex-row gap-6 h-full'>
             <div className='flex justify-center md:justify-start lg:flex-shrink-0'>

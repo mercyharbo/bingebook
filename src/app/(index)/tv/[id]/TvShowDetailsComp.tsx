@@ -580,7 +580,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
         )}
         <div className='absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent' />
 
-        <div className='absolute top-4 left-10 hidden lg:block'>
+        {/* <div className='absolute top-4 left-10 hidden lg:block'>
           <Button
             variant='secondary'
             onClick={() => router.back()}
@@ -589,10 +589,10 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
             <ChevronLeft className='h-4 w-4' />
             Back
           </Button>
-        </div>
+        </div> */}
 
         <div className='absolute bottom-0 left-0 right-0 p-5 lg:p-10'>
-          <div className='container mx-auto'>
+          <div className='w-[90%] lg:w-[80%] mx-auto'>
             <div className='flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6 items-start'>
               <div className='flex-shrink-0 w-[150px] lg:w-[200px]'>
                 <Image
@@ -692,7 +692,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                           Watch Trailer
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className='max-w-[90vw] sm:max-w-[800px]'>
+                      <DialogContent className='max-w-[90vw] sm:max-w-[800px] overflow-y-auto'>
                         <DialogHeader>
                           <DialogTitle>Trailer</DialogTitle>
                         </DialogHeader>
@@ -728,6 +728,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                       )}
                     </Button>
                   )}
+
                   {watchlistItem && !isLoadingWatchlist && (
                     <Dialog>
                       <DialogTrigger asChild>
@@ -735,7 +736,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                           <Trash2 className='h-4 w-4' /> Remove from Watchlist
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className='overflow-y-auto lg:overflow-hidden'>
                         <DialogHeader>
                           <DialogTitle>Remove from Watchlist</DialogTitle>
                           <DialogDescription>

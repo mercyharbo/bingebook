@@ -353,7 +353,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
             removed.
           </p>
           <Button onClick={() => router.back()}>
-            <ChevronLeft className='h-4 w-4 mr-2' />
+            <ChevronLeft className='h-4 w-4' />
             Go Back
           </Button>
         </div>
@@ -364,20 +364,21 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   return (
     <div className='min-h-screen -mt-16'>
       {/* Hero Section */}
-      <div className='relative h-[90vh] overflow-hidden'>
+      <div className='relative h-[100dvh] overflow-hidden'>
         {movie.backdrop_path && (
           <Image
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
             alt={movie.title}
             fill
             className='object-cover'
+            style={{ width: '100%', height: '100%' }}
             priority
             sizes='100vw'
           />
         )}
         <div className='absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent' />
 
-        <div className='absolute top-4 left-4 sm:left-6 hidden sm:block'>
+        {/* <div className='absolute top-4 left-4 sm:left-6 hidden sm:block'>
           <Button
             variant='secondary'
             onClick={() => router.back()}
@@ -386,10 +387,10 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
             <ChevronLeft className='h-4 w-4' />
             Back
           </Button>
-        </div>
+        </div> */}
 
-        <div className='absolute bottom-0 left-0 right-0 p-4 sm:p-6'>
-          <div className='container mx-auto'>
+        <div className='absolute bottom-10 lg:bottom-15 left-0 right-0 p-0 '>
+          <div className='w-[90%] lg:w-[80%] mx-auto'>
             <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 items-start'>
               <div className='flex-shrink-0 w-[150px] lg:w-[200px]'>
                 <Image
@@ -402,6 +403,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                   width={180}
                   height={270}
                   className='rounded-lg shadow-2xl w-full'
+                  style={{ width: '100%', height: 'auto' }}
                   sizes='(max-width: 640px) 150px, 180px'
                 />
               </div>
@@ -489,7 +491,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                           Watch Trailer
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className='max-w-[90vw] sm:max-w-[800px]'>
+                      <DialogContent className='max-w-[90vw] sm:max-w-[800px] overflow-y-auto lg:overflow-hidden'>
                         <DialogHeader>
                           <DialogTitle>Trailer</DialogTitle>
                         </DialogHeader>
@@ -533,7 +535,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                           <Trash2 className='h-4 w-4' /> Remove from Watchlist
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className='overflow-y-auto lg:overflow-hidden'>
                         <DialogHeader>
                           <DialogTitle>Remove from Watchlist</DialogTitle>
                           <DialogDescription>
@@ -620,7 +622,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                           alt={director.name}
                           width={60}
                           height={60}
-                          className='rounded-full h-12 w-12 sm:h-16 sm:w-16 object-top object-cover'
+                          className='rounded-full object-top object-cover'
                           sizes='(max-width: 640px) 48px, 64px'
                         />
                         <span className='font-medium text-sm sm:text-base'>
@@ -671,7 +673,8 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                               width={185}
                               height={350}
                               quality={100}
-                              className='object-cover w-full h-[280px] sm:h-[350px]'
+                              className='object-cover w-full'
+                              style={{ width: '100%', height: 'auto' }}
                               sizes='(max-width: 640px) 50vw, 33vw'
                             />
                             <div className='absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none'></div>
@@ -759,6 +762,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                                 width={40}
                                 height={40}
                                 className='rounded-full object-cover'
+                                style={{ width: 'auto', height: 'auto' }}
                                 sizes='40px'
                               />
                               <div className='flex-1'>
@@ -901,7 +905,8 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                             alt={company.name}
                             width={40}
                             height={40}
-                            className='object-cover'
+                            className='object-contain'
+                            style={{ width: 'auto', height: 'auto' }}
                             sizes='40px'
                           />
                         )}
@@ -942,6 +947,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                             width={160}
                             height={240}
                             className='rounded-xl object-cover w-full group-hover:scale-105 transition-transform'
+                            style={{ width: '100%', height: 'auto' }}
                             sizes='(max-width: 640px) 140px, 160px'
                           />
                           <div>

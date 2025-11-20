@@ -1,8 +1,8 @@
 'use client'
 
+import PersonDetailsSkeleton from '@/app/(index)/person/[id]/loading-skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Pagination,
@@ -18,11 +18,8 @@ import {
   Award,
   Calendar,
   Clock,
-  ExternalLink,
   Film,
-  Heart,
   MapPin,
-  Share2,
   Star,
   TrendingUp,
   Users,
@@ -31,7 +28,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import useSWR from 'swr'
-import LoadingSpinner from './ui/loading-spinner'
 
 interface Person {
   id: number
@@ -80,34 +76,25 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 }) => {
   const router = useRouter()
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
-  const [isLiked, setIsLiked] = useState(false)
   const [moviePage, setMoviePage] = useState(1)
   const [tvPage, setTvPage] = useState(1)
   const [upcomingPage, setUpcomingPage] = useState(1)
   const ITEMS_PER_PAGE = 15
 
   // Fetch person details
-  const {
-    data: person,
-    error: personError,
-    isLoading: personLoading,
-  } = useSWR<Person>(
+  const { data: person, isLoading: personLoading } = useSWR<Person>(
     `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}?language=en-US`,
     fetcher
   )
 
   // Fetch movie credits
-  const {
-    data: movieCredits,
-  } = useSWR<Credits>(
+  const { data: movieCredits, isLoading: movieLoading } = useSWR<Credits>(
     `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}/movie_credits?language=en-US`,
     fetcher
   )
 
   // Fetch TV credits
-  const {
-    data: tvCredits,
-  } = useSWR<Credits>(
+  const { data: tvCredits, isLoading: tvLoading } = useSWR<Credits>(
     `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}/tv_credits?language=en-US`,
     fetcher
   )
@@ -117,40 +104,6 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
     mediaType: 'movie' | 'tv'
   ) => {
     router.push(`/${mediaType}/${item.id}`)
-  }
-
-  const LoadingOrErrorState: React.FC<{
-    message: string
-    isError?: boolean
-  }> = ({ message, isError }) => (
-    <div className='min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center'>
-      <div className='text-center space-y-4'>
-        <LoadingSpinner size={50} />
-        <p
-          className={`text-lg font-medium ${
-            isError
-              ? 'text-red-600 dark:text-red-400'
-              : 'text-slate-600 dark:text-slate-400'
-          }`}
-        >
-          {message}
-        </p>
-      </div>
-    </div>
-  )
-
-  if (personLoading) {
-    return <LoadingOrErrorState message='Discovering talent...' />
-  }
-
-  if (personError) {
-    return (
-      <LoadingOrErrorState message={`Error: ${personError.message}`} isError />
-    )
-  }
-
-  if (!person) {
-    return <LoadingOrErrorState message='Person not found in our universe' />
   }
 
   // Sort and filter credits
@@ -226,11 +179,30 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
     })
   }
 
+  if (personLoading || movieLoading || tvLoading || !person) {
+    return <PersonDetailsSkeleton />
+  }
+
+  // if (!person) {
+  //   return (
+  //     <main className='min-h-screen -mt-16 bg-white dark:bg-slate-950 flex items-center justify-center'>
+  //       <div className='text-center space-y-4'>
+  //         <h1 className='text-2xl font-bold text-slate-900 dark:text-white'>
+  //           Person not found
+  //         </h1>
+  //         <p className='text-slate-600 dark:text-slate-400'>
+  //           The person you're looking for could not be found.
+  //         </p>
+  //       </div>
+  //     </main>
+  //   )
+  // }
+
   return (
-    <main className='min-h-screen bg-white dark:bg-slate-950'>
+    <main className='min-h-screen -mt-16 bg-white dark:bg-slate-950'>
       {/* Hero Section */}
-      <div className='relative bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800'>
-        <div className='relative lg:w-[80%] mx-auto px-4 py-12'>
+      <div className='relative bg-slate-100 dark:bg-slate-800 pt-[7rem] border-b border-slate-200 dark:border-slate-800'>
+        <div className='relative w-[90%] lg:w-[80%] mx-auto px-4 py-12'>
           <div className='flex flex-col lg:flex-row gap-8 lg:items-start items-center'>
             <Avatar className='w-48 h-48 border-4 border-white dark:border-slate-700 shadow-2xl'>
               <AvatarImage
@@ -258,14 +230,14 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       variant='default'
                       className='px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm transition-all duration-200 hover:shadow-md'
                     >
-                      <Award className='w-4 h-4 mr-1.5' />
+                      <Award className='size-4 mr-1.5' />
                       {person.known_for_department}
                     </Badge>
                     <Badge
                       variant='outline'
                       className='px-3 py-1.5 text-sm border-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200'
                     >
-                      <TrendingUp className='w-4 h-4 mr-1.5 text-blue-500' />
+                      <TrendingUp className='size-4 mr-1.5 text-blue-500' />
                       <span className='font-semibold'>
                         {Math.round(person.popularity)}
                       </span>
@@ -337,9 +309,9 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
               {/* <CHANGE> Reduced gap from gap-5 to gap-3 and made cards smaller */}
               <div className='grid grid-cols-1 w-full lg:w-auto lg:grid-cols-3 gap-3'>
                 {person.birthday && (
-                  <div className='flex items-center gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
-                    {/* <CHANGE> Reduced icon size from w-6 h-6 to w-4 h-4 */}
-                    <Calendar className='w-4 h-4 text-blue-600 dark:text-blue-400' />
+                  <div className='flex items-start gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
+                    {/* <CHANGE> Reduced icon size from w-6 h-6 to size-4 */}
+                    <Calendar className='size-4 text-blue-600 dark:text-blue-400' />
                     <div>
                       <p className='text-xs text-slate-600 dark:text-slate-400 font-medium'>
                         {person.deathday ? 'Lived' : 'Age'}
@@ -358,8 +330,8 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                 )}
 
                 {person.place_of_birth && (
-                  <div className='flex items-center gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
-                    <MapPin className='w-4 h-4 text-green-600 dark:text-green-400' />
+                  <div className='flex items-start gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
+                    <MapPin className='size-4 text-green-600 dark:text-green-400' />
                     <div>
                       <p className='text-xs text-slate-600 dark:text-slate-400 font-medium'>
                         Born in
@@ -371,8 +343,8 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                   </div>
                 )}
 
-                <div className='flex items-center gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
-                  <Film className='w-4 h-4 text-purple-600 dark:text-purple-400' />
+                <div className='flex items-start gap-2 p-3 bg-slate-200 dark:bg-slate-800 rounded-lg'>
+                  <Film className='size-4 text-purple-600 dark:text-purple-400' />
                   <div>
                     <p className='text-xs text-slate-600 dark:text-slate-400 font-medium'>
                       Total Credits
@@ -386,8 +358,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                 </div>
               </div>
 
-              {/* <CHANGE> Made buttons smaller and reduced gap */}
-              <div className='flex flex-wrap gap-2'>
+              {/* <div className='flex flex-wrap gap-2'>
                 <Button
                   variant={isLiked ? 'default' : 'outline'}
                   onClick={() => setIsLiked(!isLiked)}
@@ -415,7 +386,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                   <ExternalLink className='w-3 h-3' />
                   IMDb
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -463,7 +434,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                   </h2>
                 </div>
                 <div className='prose prose-slate dark:prose-invert prose-sm sm:prose-base max-w-none'>
-                  <p className='leading-relaxed'>{person.biography}</p>
+                  <p className='text-sm/loose'>{person.biography}</p>
                 </div>
               </div>
             )}
@@ -479,22 +450,22 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
               </Badge>
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-5'>
+            <div className='grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 3xl:grid-cols-5 gap-5'>
               {paginatedMovies.map((movie) => (
-                <Card
+                <div
                   key={movie.id}
-                  className='group cursor-pointer hover:shadow-md transition-all duration-300 p-0 gap-2 overflow-hidden'
+                  className='group cursor-pointer'
                   onClick={() => handleItemClick(movie, 'movie')}
                   role='button'
                   aria-label={`View ${movie.title} (movie)`}
                 >
-                  <div className='relative lg:aspect-[2/3] aspect-[4/4] overflow-hidden'>
+                  <div className='relative mb-3 overflow-hidden rounded-lg'>
                     <Image
                       src={`${IMAGE_BASE_URL}${movie.poster_path}`}
                       alt={movie.title}
                       width={500}
-                      height={500}
-                      className='rounded-t-lg shadow-2xl object-cover w-full h-full'
+                      height={750}
+                      className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
                       sizes='(max-width: 640px) 150px, 180px'
                     />
                     <div className='absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1'>
@@ -502,18 +473,22 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       {movie.vote_average.toFixed(1)}
                     </div>
                   </div>
-                  <CardContent className='p-2 space-y-1'>
-                    <h3 className='font-bold text-sm line-clamp-2 text-slate-900 dark:text-white'>
+                  <div className='space-y-1'>
+                    <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
                       {movie.title}
                     </h3>
-                    <p className='text-xs text-slate-600 dark:text-slate-400'>
-                      {movie.character}
-                    </p>
-                    <p className='text-xs text-slate-500 dark:text-slate-500'>
-                      {new Date(movie.release_date).getFullYear()}
-                    </p>
-                  </CardContent>
-                </Card>
+                    <div className='flex justify-between text-xs text-muted-foreground'>
+                      <span>
+                        {movie.release_date
+                          ? new Date(movie.release_date).getFullYear()
+                          : 'N/A'}
+                      </span>
+                      <span className='line-clamp-1'>
+                        {movie.character || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -569,22 +544,22 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
               </Badge>
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-5'>
+            <div className='grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 3xl:grid-cols-5 gap-5'>
               {paginatedTVShows.map((show) => (
-                <Card
+                <div
                   key={show.id}
-                  className='group cursor-pointer hover:shadow-md transition-all duration-300 p-0 gap-2 overflow-hidden'
+                  className='group cursor-pointer'
                   onClick={() => handleItemClick(show, 'tv')}
                   role='button'
                   aria-label={`View ${show.name} (tv)`}
                 >
-                  <div className='relative lg:aspect-[3/4] aspect-[4/4] overflow-hidden'>
+                  <div className='relative mb-3 overflow-hidden rounded-lg'>
                     <Image
                       src={`${IMAGE_BASE_URL}${show.poster_path}`}
                       alt={show.name}
                       width={500}
-                      height={500}
-                      className='rounded-t-lg shadow-2xl object-cover w-full h-full'
+                      height={750}
+                      className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
                       sizes='(max-width: 640px) 150px, 180px'
                     />
                     <div className='absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1'>
@@ -592,19 +567,22 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       {show.vote_average.toFixed(1)}
                     </div>
                   </div>
-                  <CardContent className='p-2 space-y-2'>
-                    <h3 className='font-bold text-sm line-clamp-2 text-slate-900 dark:text-white'>
+                  <div className='space-y-1'>
+                    <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
                       {show.name}
                     </h3>
-                    <p className='text-xs text-slate-600 dark:text-slate-400'>
-                      {show.character}
-                    </p>
-                    <p className='text-xs text-slate-500 dark:text-slate-500'>
-                      {show.episode_count} episodes •{' '}
-                      {new Date(show.first_air_date).getFullYear()}
-                    </p>
-                  </CardContent>
-                </Card>
+                    <div className='flex justify-between text-xs text-muted-foreground'>
+                      <span>
+                        {show.first_air_date
+                          ? new Date(show.first_air_date).getFullYear()
+                          : 'N/A'}
+                      </span>
+                      <span className='line-clamp-1'>
+                        {show.character || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -658,41 +636,48 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
             </div>
 
             {paginatedUpcoming.length > 0 ? (
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5'>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 gap-5'>
                 {paginatedUpcoming.map((project) => (
-                  <Card
+                  <div
                     key={project.id}
-                    className='group cursor-pointer hover:shadow-md transition-all duration-300 p-0 gap-2 overflow-hidden'
+                    className='group cursor-pointer'
                     onClick={() => handleItemClick(project, 'movie')}
                     role='button'
                     aria-label={`View ${project.title} (movie)`}
                   >
-                    <div className='relative lg:aspect-[3/4] aspect-[4/4] overflow-hidden'>
+                    <div className='relative mb-3 overflow-hidden rounded-lg'>
                       <Image
                         src={`${IMAGE_BASE_URL}${project.poster_path}`}
                         alt={project.title}
                         width={500}
-                        height={500}
-                        className='rounded-t-lg shadow-2xl w-full'
+                        height={750}
+                        className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
                         sizes='(max-width: 640px) 150px, 180px'
                       />
                       <Badge className='absolute top-3 left-3 bg-orange-600 hover:bg-orange-700'>
                         Coming Soon
                       </Badge>
+                      <div className='absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1'>
+                        <Star className='w-3 h-3 fill-yellow-400 text-yellow-400' />
+                        {project.vote_average.toFixed(1)}
+                      </div>
                     </div>
-                    <CardContent className='p-2 space-y-2'>
-                      <h3 className='font-bold text-lg text-slate-900 dark:text-white'>
+                    <div className='space-y-1'>
+                      <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
                         {project.title}
                       </h3>
-                      <p className='text-sm text-slate-600 dark:text-slate-400'>
-                        as {project.character}
-                      </p>
-                      <p className='text-sm text-slate-500 dark:text-slate-500 flex items-center gap-2'>
-                        <Calendar className='w-4 h-4' />
-                        {formatDate(project.release_date)}
-                      </p>
-                    </CardContent>
-                  </Card>
+                      <div className='flex justify-between text-xs text-muted-foreground'>
+                        <span>
+                          {project.release_date
+                            ? formatDate(project.release_date)
+                            : 'N/A'}
+                        </span>
+                        <span className='line-clamp-1'>
+                          {project.character || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (

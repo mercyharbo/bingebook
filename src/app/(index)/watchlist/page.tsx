@@ -17,14 +17,14 @@ import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import EmptyState from './empty-state'
 import FilterSheet from './FilterSheet'
 import WatchlistLoadingSkeleton from './loading-skeleton'
 import WatchlistItemDialog from './WatchlistItemDialog'
 
-import { WatchlistItem } from '@/types/watchlist'
+import { TMDBSeason, WatchlistItem } from '@/types/watchlist'
 
 export default function WatchlistPage() {
   const supabase = createClient()
@@ -91,12 +91,12 @@ export default function WatchlistPage() {
       }
     }
     fetchWatchlist()
-  }, [supabase])
+  }, [supabase, setIsLoading, setWatchlistItems])
 
   // Reset to page 1 when filters or search change
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeFilter, searchQuery, sortBy])
+  }, [activeFilter, searchQuery, sortBy, setCurrentPage])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -138,10 +138,9 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         (item) =>
           item.is_seen ||
           (item.media_type === 'tv' &&
-            Object.values(item.seen_episodes).reduce(
-              (sum: number, eps: string[]) => sum + eps.length,
-              0
-            ) === item.tmdb_data.number_of_episodes)
+            item.tmdb_data.number_of_seasons &&
+            item.tmdb_data.number_of_seasons > 0 &&
+            item.completed_seasons.length === item.tmdb_data.number_of_seasons)
       ).length,
     },
     {
@@ -185,6 +184,74 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
       last_updated: new Date().toISOString(),
     })
   }
+
+  const handleTVProgressUpdate = (
+    watchlistId: number,
+    seenEpisodes: Record<string, string[]>,
+    completedSeasons: number[]
+  ) => {
+    const updates = {
+      seen_episodes: seenEpisodes,
+      completed_seasons: completedSeasons,
+      last_updated: new Date().toISOString(),
+    }
+    updateWatchlistItem(watchlistId, updates)
+
+    // Also update selectedItem if it's the same item
+    if (selectedItem && selectedItem.id === watchlistId) {
+      setSelectedItem({ ...selectedItem, ...updates })
+    }
+  }
+
+  const updateTVMetadata = useCallback(
+    async (
+      watchlistId: number,
+      numberOfSeasons: number,
+      seasons: TMDBSeason[]
+    ) => {
+      const item = watchlistItems.find((item) => item.id === watchlistId)
+      if (item) {
+        const updatedTmdbData = {
+          ...item.tmdb_data,
+          number_of_seasons: numberOfSeasons,
+          seasons: seasons,
+        }
+
+        // Update in database
+        const { error } = await supabase
+          .from('watchlist')
+          .update({
+            tmdb_data: updatedTmdbData,
+            last_updated: new Date().toISOString(),
+          })
+          .eq('id', watchlistId)
+
+        if (error) {
+          console.error('Error updating TV metadata:', error)
+        } else {
+          // Update local state only if database update succeeds
+          updateWatchlistItem(watchlistId, {
+            tmdb_data: updatedTmdbData,
+          })
+
+          // Also update selectedItem if it's the same item
+          if (selectedItem && selectedItem.id === watchlistId) {
+            setSelectedItem({
+              ...selectedItem,
+              tmdb_data: updatedTmdbData,
+            })
+          }
+        }
+      }
+    },
+    [
+      supabase,
+      watchlistItems,
+      selectedItem,
+      updateWatchlistItem,
+      setSelectedItem,
+    ]
+  )
 
   const addToWatchlist = async (item: WatchlistItem) => {
     try {
@@ -237,10 +304,9 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         return (
           item.is_seen ||
           (item.media_type === 'tv' &&
-            Object.values(item.seen_episodes).reduce(
-              (sum: number, eps: string[]) => sum + eps.length,
-              0
-            ) === item.tmdb_data.number_of_episodes)
+            item.tmdb_data.number_of_seasons &&
+            item.tmdb_data.number_of_seasons > 0 &&
+            item.completed_seasons.length === item.tmdb_data.number_of_seasons)
         )
       if (activeFilter === 'planned')
         return (
@@ -335,7 +401,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
               <Button
                 onClick={() => setIsFilterOpen(true)}
                 variant='outline'
-                className='h-12 w-full lg:w-auto bg-transparent shadow-none border border-gray-400 '
+                className='h-11 w-full lg:w-auto bg-transparent shadow-none border border-gray-400 '
               >
                 <Filter className='size-4' />
                 Filters
@@ -379,18 +445,28 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
                     {item.media_type === 'movie' ? 'Movie' : 'TV'}
                   </Badge>
                   {(() => {
-                    const isSeen =
-                      item.media_type === 'movie'
-                        ? item.is_seen
-                        : Object.values(item.seen_episodes).reduce(
-                            (sum: number, eps: string[]) => sum + eps.length,
-                            0
-                          ) === (item.tmdb_data.number_of_episodes || 0)
-                    return isSeen ? (
-                      <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
-                        Watched
-                      </Badge>
-                    ) : null
+                    if (item.media_type === 'movie') {
+                      return item.is_seen ? (
+                        <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
+                          Watched
+                        </Badge>
+                      ) : null
+                    } else {
+                      // For TV shows, check if all seasons are completed
+                      const hasSeasons =
+                        item.tmdb_data.number_of_seasons &&
+                        item.tmdb_data.number_of_seasons > 0
+                      const allSeasonsCompleted =
+                        hasSeasons &&
+                        item.completed_seasons.length > 0 &&
+                        item.completed_seasons.length ===
+                          item.tmdb_data.number_of_seasons
+                      return allSeasonsCompleted ? (
+                        <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
+                          Watched
+                        </Badge>
+                      ) : null
+                    }
                   })()}
                 </div>
                 <div className='space-y-1'>
@@ -431,6 +507,8 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
             removeFromWatchlist={removeFromWatchlist}
             addToWatchlist={addToWatchlist}
             handleMovieSeenToggle={handleMovieSeenToggle}
+            handleTVProgressUpdate={handleTVProgressUpdate}
+            updateTVMetadata={updateTVMetadata}
             isRemovingFromWatchlist={isRemovingFromWatchlist}
             watchlistItems={watchlistItems}
           />

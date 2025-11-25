@@ -4,7 +4,7 @@ export interface TMDBGenre {
 }
 
 export interface TMDBSeason {
-  id: number
+  id?: number
   season_number: number
   episode_count: number
   name: string

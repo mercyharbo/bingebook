@@ -10,10 +10,12 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { WatchlistItem } from '@/types/watchlist'
+import { fetcher } from '@/lib/utils'
+import { TMDBSeason, WatchlistItem } from '@/types/watchlist'
 import { Calendar, Info, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 interface WatchlistItemDialogProps {
   selectedItem: WatchlistItem | null
@@ -22,6 +24,16 @@ interface WatchlistItemDialogProps {
   removeFromWatchlist: (id: number) => void
   addToWatchlist: (item: WatchlistItem) => void
   handleMovieSeenToggle: (watchlistId: number, newStatus: boolean) => void
+  handleTVProgressUpdate: (
+    watchlistId: number,
+    seenEpisodes: Record<string, string[]>,
+    completedSeasons: number[]
+  ) => void
+  updateTVMetadata: (
+    watchlistId: number,
+    numberOfSeasons: number,
+    seasons: TMDBSeason[]
+  ) => void
   isRemovingFromWatchlist: boolean
   watchlistItems: WatchlistItem[]
 }
@@ -33,12 +45,57 @@ export default function WatchlistItemDialog({
   removeFromWatchlist,
   addToWatchlist,
   handleMovieSeenToggle,
+  handleTVProgressUpdate,
+  updateTVMetadata,
   isRemovingFromWatchlist,
   watchlistItems,
 }: WatchlistItemDialogProps) {
+  const [tvSeasons, setTvSeasons] = useState<TMDBSeason[]>([])
+
   const isInWatchlist = selectedItem
     ? watchlistItems.some((item) => item.id === selectedItem.id)
     : false
+
+  // Fetch TV show seasons when dialog opens for a TV show
+  useEffect(() => {
+    const fetchTVSeasons = async () => {
+      if (
+        selectedItem &&
+        selectedItem.media_type === 'tv' &&
+        isDialogOpen &&
+        (!selectedItem.tmdb_data.seasons ||
+          selectedItem.tmdb_data.seasons.length === 0)
+      ) {
+        try {
+          const data = await fetcher(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${selectedItem.tmdb_id}?language=en-US`
+          )
+          setTvSeasons(data.seasons || [])
+          // Update the parent and database with the full TV metadata
+          if (data.number_of_seasons && data.seasons) {
+            updateTVMetadata(
+              selectedItem.id,
+              data.number_of_seasons,
+              data.seasons
+            )
+          }
+        } catch (error) {
+          console.error('Error fetching TV seasons:', error)
+          setTvSeasons([])
+        } finally {
+          // Loading complete
+        }
+      } else if (
+        selectedItem &&
+        selectedItem.media_type === 'tv' &&
+        selectedItem.tmdb_data.seasons
+      ) {
+        setTvSeasons(selectedItem.tmdb_data.seasons)
+      }
+    }
+
+    fetchTVSeasons()
+  }, [selectedItem, isDialogOpen, updateTVMetadata])
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -148,9 +205,16 @@ export default function WatchlistItemDialog({
                     <TVProgressTracker
                       watchlistId={selectedItem.id}
                       tmdbId={selectedItem.tmdb_id}
-                      seasons={selectedItem.tmdb_data.seasons || []}
+                      seasons={tvSeasons}
                       seenEpisodes={selectedItem.seen_episodes}
                       completedSeasons={selectedItem.completed_seasons}
+                      onProgressUpdate={(seenEpisodes, completedSeasons) =>
+                        handleTVProgressUpdate(
+                          selectedItem.id,
+                          seenEpisodes,
+                          completedSeasons
+                        )
+                      }
                     />
                   )}
                 </>

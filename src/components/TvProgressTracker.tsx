@@ -20,7 +20,7 @@ import {
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { cn, fetcher } from '@/lib/utils'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import useSWR from 'swr'
 import LoadingSpinner from './ui/loading-spinner'
@@ -31,11 +31,16 @@ interface TVProgressTrackerProps {
   seasons: { season_number: number; episode_count: number; name: string }[]
   seenEpisodes: Record<string, string[]>
   completedSeasons: number[]
+  onProgressUpdate?: (
+    seenEpisodes: Record<string, string[]>,
+    completedSeasons: number[]
+  ) => void
 }
 
 interface Episode {
   episode_number: number
   name: string
+  air_date: string | null
 }
 
 export default function TVProgressTracker({
@@ -44,10 +49,13 @@ export default function TVProgressTracker({
   seasons,
   seenEpisodes: initialSeenEpisodes,
   completedSeasons: initialCompletedSeasons,
+  onProgressUpdate,
 }: TVProgressTrackerProps) {
   const supabase = createClient()
   const [selectedSeason, setSelectedSeason] = useState<string>(
-    seasons[0]?.season_number.toString() || '1'
+    seasons
+      ?.filter((season) => season.season_number > 0)[0]
+      ?.season_number.toString() || '1'
   )
 
   // Local state to track seen episodes and completed seasons
@@ -59,6 +67,16 @@ export default function TVProgressTracker({
   const [isMarkingAll, setIsMarkingAll] = useState(false)
 
   const { loadingEpisodes, setLoadingEpisode } = useWatchlistStore()
+
+  // Sync local state with props when they change (e.g., when dialog reopens)
+  useEffect(() => {
+    setSeenEpisodes(initialSeenEpisodes)
+    setCompletedSeasons(initialCompletedSeasons)
+  }, [initialSeenEpisodes, initialCompletedSeasons])
+
+  // Filter out invalid seasons (like specials with season_number 0)
+  const validSeasons =
+    seasons?.filter((season) => season.season_number > 0) || []
 
   const { data, error, isLoading } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tmdbId}/season/${selectedSeason}`,
@@ -108,6 +126,9 @@ export default function TVProgressTracker({
         setCompletedSeasons(completedSeasons)
         toast.error('Failed to update episode')
       } else {
+        // Notify parent of the update
+        onProgressUpdate?.(updatedSeenEpisodes, newCompletedSeasons)
+
         // Only show toast for season completion or when unmarking episodes
         if (
           isSeasonComplete &&
@@ -133,21 +154,23 @@ export default function TVProgressTracker({
 
   const markAllEpisodesAsSeen = async () => {
     setIsMarkingAll(true)
-    const seasonKey = `season_${selectedSeason}`
-    const allEpisodeCodes = episodes.map(
+    const availableEpisodes = episodes.filter((episode) =>
+      isEpisodeAvailable(episode.air_date)
+    )
+    const allEpisodeCodes = availableEpisodes.map(
       (episode) =>
         `S${selectedSeason.padStart(2, '0')}E${episode.episode_number
           .toString()
           .padStart(2, '0')}`
     )
 
-    // Set loading state for all episodes
+    // Set loading state for all available episodes
     allEpisodeCodes.forEach((code) => setLoadingEpisode(code, true))
 
     try {
       const updatedSeenEpisodes = {
         ...seenEpisodes,
-        [seasonKey]: allEpisodeCodes,
+        [`season_${selectedSeason}`]: allEpisodeCodes,
       }
 
       const newCompletedSeasons = [
@@ -174,8 +197,11 @@ export default function TVProgressTracker({
         setCompletedSeasons(completedSeasons)
         toast.error('Failed to mark all episodes as seen')
       } else {
+        // Notify parent of the update
+        onProgressUpdate?.(updatedSeenEpisodes, newCompletedSeasons)
+
         toast.success(
-          `All episodes in Season ${selectedSeason} marked as seen! 🎉`
+          `All available episodes in Season ${selectedSeason} marked as seen! 🎉`
         )
       }
     } catch (error) {
@@ -191,13 +217,30 @@ export default function TVProgressTracker({
     }
   }
 
-  const allSeasonsCompleted = seasons.every((season) =>
-    completedSeasons.includes(season.season_number)
-  )
+  const allSeasonsCompleted =
+    validSeasons.length > 0 &&
+    completedSeasons.length > 0 &&
+    validSeasons.every((season) =>
+      completedSeasons.includes(season.season_number)
+    )
 
-  const allEpisodesInSeasonSeen =
-    episodes.length > 0 &&
-    (seenEpisodes[`season_${selectedSeason}`]?.length || 0) === episodes.length
+  const isEpisodeAvailable = (airDate: string | null) => {
+    if (!airDate) return false
+    const episodeDate = new Date(airDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
+    return episodeDate <= today
+  }
+
+  const allEpisodesInSeasonSeen = (() => {
+    const availableEpisodes = episodes.filter((episode) =>
+      isEpisodeAvailable(episode.air_date)
+    )
+    const seenCount = seenEpisodes[`season_${selectedSeason}`]?.length || 0
+    return (
+      availableEpisodes.length > 0 && seenCount === availableEpisodes.length
+    )
+  })()
 
   return (
     <Dialog>
@@ -231,7 +274,7 @@ export default function TVProgressTracker({
                 <SelectValue placeholder='Select season' />
               </SelectTrigger>
               <SelectContent>
-                {seasons.map((season) => (
+                {validSeasons.map((season) => (
                   <SelectItem
                     key={season.season_number}
                     value={season.season_number.toString()}
@@ -257,9 +300,9 @@ export default function TVProgressTracker({
                   <span>Marking...</span>
                 </div>
               ) : allEpisodesInSeasonSeen ? (
-                'All Seen ✓'
+                'All Available Seen ✓'
               ) : (
-                'Mark All as Seen'
+                'Mark Available as Seen'
               )}
             </Button>
           </div>
@@ -286,17 +329,21 @@ export default function TVProgressTracker({
                     episodeCode
                   )
                 const isLoadingEpisode = loadingEpisodes[episodeCode] || false
+                const available = isEpisodeAvailable(episode.air_date)
                 return (
                   <Button
                     key={episodeCode}
                     size='lg'
                     variant={isSeen ? 'default' : 'outline'}
                     onClick={() => toggleEpisode(episodeCode)}
-                    disabled={isLoadingEpisode || isLoading}
+                    disabled={isLoadingEpisode || isLoading || !available}
                     className={cn(
                       'text-xs relative transition-all duration-200',
-                      isLoadingEpisode && 'opacity-70 cursor-not-allowed'
+                      isLoadingEpisode && 'opacity-70 cursor-not-allowed',
+                      !available &&
+                        'opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 cursor-not-allowed'
                     )}
+                    title={!available ? 'Episode not yet available' : undefined}
                   >
                     {isLoadingEpisode ? (
                       <div className='flex items-center justify-center gap-2 py-1'>
@@ -309,6 +356,9 @@ export default function TVProgressTracker({
                       <div className='flex  items-center justify-center gap-0.5'>
                         <span className='leading-tight'>{episodeCode}</span>
                         {isSeen && <span className='text-[10px]'>✓</span>}
+                        {!available && (
+                          <span className='text-[8px] ml-0.5'>🔒</span>
+                        )}
                       </div>
                     )}
                   </Button>

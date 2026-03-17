@@ -1,18 +1,14 @@
 'use client'
 
 import {
-  Compass,
-  Film,
-  Home,
-  ListVideo,
-  Heart,
-  PlayCircle,
   Clock,
-  FolderOpen,
-  Download,
-  Settings,
-  LogOut,
+  Compass,
+  Heart,
+  Home,
   LayoutGrid,
+  LogOut,
+  PlayCircle,
+  Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -20,19 +16,17 @@ import { usePathname } from 'next/navigation'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
-import { Tv } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { createClient } from '@/lib/supabase/client'
+import { Tv } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const mainItems = [
@@ -60,35 +54,39 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r-0 bg-transparent">
-      <div className="absolute inset-0 bg-sidebar/40 backdrop-blur-xl -z-10" />
-      
-      <SidebarHeader className="p-6">
+    <Sidebar className='border-r-0 bg-transparent'>
+      <div className='absolute inset-0 bg-sidebar/40 backdrop-blur-xl -z-10' />
+
+      <SidebarHeader className='p-6'>
         <Link
-          href="/"
-          className="font-medium text-2xl flex items-center gap-3 transition-all hover:scale-105"
+          href='/'
+          className='font-medium text-2xl flex items-center gap-3 transition-all hover:scale-105'
         >
-          <div className="bg-primary/20 p-2 rounded-lg border border-primary/30">
-            <Tv className="size-6 text-primary" />
+          <div className='bg-primary/20 p-2 rounded-lg border border-primary/30'>
+            <Tv className='size-6 text-primary' />
           </div>
-          <span className="text-glow">Drameeo</span>
+          <span className='text-glow'>Drameeo</span>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 gap-0">
+      <SidebarContent className='px-3 gap-0'>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-xs font-medium uppercase text-muted-foreground/50 mb-2">Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className='px-3 text-xs font-medium uppercase text-muted-foreground/50 mb-2'>
+            Menu
+          </SidebarGroupLabel>
           <SidebarMenu>
             {mainItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
+                <SidebarMenuButton
+                  asChild
                   isActive={pathname === item.url}
-                  className="h-11 transition-all hover:bg-white/5 active:scale-95"
+                  className='h-11 transition-all hover:bg-white/5 active:scale-95'
                 >
                   <Link href={item.url}>
-                    <item.icon className="size-5" />
-                    <span className="text-[15px] font-medium">{item.title}</span>
+                    <item.icon className='size-5' />
+                    <span className='text-[15px] font-medium'>
+                      {item.title}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -96,19 +94,23 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-3 text-xs font-medium uppercase text-muted-foreground/50 mb-2">Library</SidebarGroupLabel>
+        <SidebarGroup className='mt-4'>
+          <SidebarGroupLabel className='px-3 text-xs font-medium uppercase text-muted-foreground/50 mb-2'>
+            Library
+          </SidebarGroupLabel>
           <SidebarMenu>
             {libraryItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
+                <SidebarMenuButton
+                  asChild
                   isActive={pathname === item.url}
-                  className="h-11 transition-all hover:bg-white/5 active:scale-95"
+                  className='h-11 transition-all hover:bg-white/5 active:scale-95'
                 >
                   <Link href={item.url}>
-                    <item.icon className="size-5" />
-                    <span className="text-[15px] font-medium">{item.title}</span>
+                    <item.icon className='size-5' />
+                    <span className='text-[15px] font-medium'>
+                      {item.title}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -117,28 +119,30 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 gap-2">
+      <SidebarFooter className='p-4 gap-2'>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              asChild 
-              className="h-11 transition-all hover:bg-white/5"
+            <SidebarMenuButton
+              asChild
+              className='h-11 transition-all hover:bg-white/5'
             >
-              <Link href="/settings">
-                <Settings className="size-5 text-muted-foreground" />
-                <span className="text-[15px] font-medium text-muted-foreground">Settings</span>
+              <Link href='/settings'>
+                <Settings className='size-5 text-muted-foreground' />
+                <span className='text-[15px] font-medium text-muted-foreground'>
+                  Settings
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          
+
           {user && (
             <SidebarMenuItem>
-              <SidebarMenuButton 
+              <SidebarMenuButton
                 onClick={handleLogout}
-                className="h-11 transition-all hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
+                className='h-11 transition-all hover:bg-destructive/10 hover:text-destructive text-muted-foreground'
               >
-                <LogOut className="size-5" />
-                <span className="text-[15px] font-medium">Logout</span>
+                <LogOut className='size-5' />
+                <span className='text-[15px] font-medium'>Logout</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}

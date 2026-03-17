@@ -1,11 +1,22 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function CastTab({ cast }: { cast: any[] }) {
+type CastMember = {
+  id: number
+  name: string
+  character?: string
+  profile_path?: string | null
+}
+
+export default function CastTab({ cast }: { cast: CastMember[] }) {
   return (
     <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6'>
       {cast.map((actor) => (
-        <Link key={actor.id} href={`/person/${actor.id}`} className='group cursor-pointer'>
+        <Link
+          key={actor.id}
+          href={`/person/${actor.id}`}
+          className='group cursor-pointer'
+        >
           <div className='relative aspect-[2/3] overflow-hidden rounded-lg shadow-xl transition-all group-hover:shadow-primary/20 group-hover:shadow-2xl mb-4 border border-white/5'>
             <Image
               src={

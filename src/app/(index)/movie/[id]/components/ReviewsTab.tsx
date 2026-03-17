@@ -1,7 +1,22 @@
-import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
+import Image from 'next/image'
 
-export default function ReviewsTab({ movieReviews }: { movieReviews: any[] }) {
+type Review = {
+  id: string
+  author: string
+  content: string
+  created_at: string
+  author_details: {
+    avatar_path?: string | null
+    rating?: number
+  }
+}
+
+export default function ReviewsTab({
+  movieReviews,
+}: {
+  movieReviews: Review[]
+}) {
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
       {movieReviews.slice(0, 6).map((review) => (
@@ -37,7 +52,7 @@ export default function ReviewsTab({ movieReviews }: { movieReviews: any[] }) {
             </div>
           </div>
           <p className='text-gray-300 text-sm line-clamp-6'>
-            "{review.content}"
+            &quot;{review.content}&quot;
           </p>
         </div>
       ))}

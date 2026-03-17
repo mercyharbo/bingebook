@@ -7,13 +7,14 @@ import { useHomeStore } from '@/lib/store/homeStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
+import type { Movie } from '@/types/movie'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import useSWR from 'swr'
 
 export default function HomePageComp() {
   const supabase = createClient()
-  
+
   const {
     currentSlide,
     setCurrentSlide,
@@ -32,7 +33,7 @@ export default function HomePageComp() {
       onSuccess: (data) => {
         setMoviesList(data.results)
       },
-    }
+    },
   )
 
   // Fetch watchlist
@@ -81,11 +82,11 @@ export default function HomePageComp() {
     setCurrentSlide(
       (prev) =>
         (prev - 1 + Math.min(moviesList.length, 10)) %
-        Math.min(moviesList.length, 10)
+        Math.min(moviesList.length, 10),
     )
   }
 
-  const addToWatchlist = async (movie: any) => {
+  const addToWatchlist = async (movie: Movie) => {
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession()
 
@@ -101,7 +102,7 @@ export default function HomePageComp() {
     const { error } = await supabase.from('watchlist').insert({
       user_id: userId,
       tmdb_id: movie?.id,
-      media_type: movie.media_type || (movie.title ? 'movie' : 'tv'),
+      media_type: movie.title ? 'movie' : 'tv',
       tmdb_data: tmdbData,
       poster_path: movie?.poster_path,
       is_seen: false,
@@ -130,7 +131,7 @@ export default function HomePageComp() {
   }
 
   return (
-    <main className="flex flex-col min-h-screen bg-gradient-premium overflow-x-hidden">
+    <main className='flex flex-col min-h-screen bg-gradient-premium overflow-x-hidden'>
       {/* Hero Section */}
       {moviesList && moviesList.length > 0 && (
         <HeroSlider
@@ -145,7 +146,7 @@ export default function HomePageComp() {
         />
       )}
 
-      <div className="flex flex-col gap-16 px-6 py-12 lg:px-12">
+      <div className='flex flex-col gap-16 px-6 py-12 lg:px-12'>
         <TrendingGrid
           isInWatchlist={isInWatchlist}
           addToWatchlist={addToWatchlist}

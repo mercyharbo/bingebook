@@ -9,13 +9,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { GENRE_MAP } from '@/lib/constants'
+import type { Movie } from '@/types/movie'
 import { format, parseISO } from 'date-fns'
 import { Calendar, Info, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
 interface MediaItemDialogProps {
-  movie: any
+  movie: Movie
   isDialogOpen: boolean
   setIsDialogOpen: (open: boolean) => void
   isInWatchlist: boolean

@@ -1,8 +1,8 @@
 'use client'
 
+import { format } from 'date-fns'
 import { Calendar, SlidersHorizontal } from 'lucide-react'
 import { useEffect } from 'react'
-import { format } from 'date-fns'
 import useSWR from 'swr'
 
 import HeroSlider from '@/components/HeroSlider'
@@ -30,22 +30,15 @@ export default function UpcomingMoviesPage() {
     sortBy,
     currentPage,
     totalPages,
-    isFilterOpen,
-    selectedMovie,
     currentSlide,
     watchlistIds,
     setUpcomingMovies,
-    toggleGenre,
-    setDateRange,
-    setSortBy,
     setCurrentPage,
     setTotalPages,
     setIsFilterOpen,
-    setSelectedMovie,
     setCurrentSlide,
     setWatchlistIds,
     clearAllFilters,
-    resetPagination,
   } = useUpcomingStore()
 
   const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
@@ -83,8 +76,12 @@ export default function UpcomingMoviesPage() {
     sort_by: sortBy,
     with_release_type: '2|3',
     ...(selectedGenres.length > 0 && { with_genres: selectedGenres.join(',') }),
-    ...(dateRange?.from && { 'release_date.gte': format(dateRange.from, 'yyyy-MM-dd') }),
-    ...(dateRange?.to && { 'release_date.lte': format(dateRange.to, 'yyyy-MM-dd') }),
+    ...(dateRange?.from && {
+      'release_date.gte': format(dateRange.from, 'yyyy-MM-dd'),
+    }),
+    ...(dateRange?.to && {
+      'release_date.lte': format(dateRange.to, 'yyyy-MM-dd'),
+    }),
   })
 
   const { error, isLoading } = useSWR(
@@ -97,11 +94,6 @@ export default function UpcomingMoviesPage() {
       },
     },
   )
-
-  const handleGenreToggle = (genreId: string) => {
-    toggleGenre(genreId)
-    resetPagination()
-  }
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -188,7 +180,9 @@ export default function UpcomingMoviesPage() {
         {/* Header */}
         <header className='flex flex-col lg:flex-row justify-between items-center w-full gap-6'>
           <div className='space-y-1'>
-            <h1 className='text-3xl font-medium text-glow uppercase italic'>Upcoming Movies</h1>
+            <h1 className='text-3xl font-medium text-glow uppercase italic'>
+              Upcoming Movies
+            </h1>
             <p className='text-muted-foreground font-medium'>
               Stay ahead of the trend with these upcoming releases.
             </p>
@@ -204,7 +198,9 @@ export default function UpcomingMoviesPage() {
             >
               <SlidersHorizontal className='size-4' />
               <span className='font-medium'>Filters</span>
-              {(selectedGenres.length > 0 || dateRange?.from || dateRange?.to) && (
+              {(selectedGenres.length > 0 ||
+                dateRange?.from ||
+                dateRange?.to) && (
                 <Badge className='ml-1 bg-primary text-primary-foreground size-5 p-0 flex items-center justify-center rounded-full text-[10px]'>
                   {selectedGenres.length +
                     (dateRange?.from ? 1 : 0) +
@@ -237,7 +233,7 @@ export default function UpcomingMoviesPage() {
                 key={movie.id}
                 movie={movie}
                 isInWatchlist={isInWatchlist(movie.id)}
-                addToWatchlist={() => addToWatchlist(movie as any)}
+                addToWatchlist={() => addToWatchlist(movie)}
                 addingToWatchlist={addingToWatchlist}
               />
             ))}

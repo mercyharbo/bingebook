@@ -2,13 +2,34 @@ import TVProgressTracker from '@/components/TvProgressTracker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
+type Season = {
+  season_number: number
+  episode_count: number
+  name: string
+}
+
+type TvShow = {
+  id: number
+  overview?: string
+  networks?: { name: string }[]
+  number_of_episodes?: number
+  episode_run_time?: number[]
+  seasons?: Season[]
+}
+
+type WatchlistItem = {
+  id: number
+  seen_episodes?: Record<string, string[]>
+  completed_seasons?: number[]
+}
+
 export default function OverviewTab({
   tvShow,
   watchlistItem,
   formatRuntime,
 }: {
-  tvShow: any
-  watchlistItem: any
+  tvShow: TvShow
+  watchlistItem?: WatchlistItem | null
   formatRuntime: (minutes: number[]) => string
 }) {
   return (
@@ -25,9 +46,9 @@ export default function OverviewTab({
           <TVProgressTracker
             watchlistId={watchlistItem.id}
             tmdbId={tvShow.id}
-            seasons={tvShow.seasons}
-            seenEpisodes={watchlistItem.seen_episodes}
-            completedSeasons={watchlistItem.completed_seasons}
+            seasons={tvShow.seasons ?? []}
+            seenEpisodes={watchlistItem.seen_episodes ?? {}}
+            completedSeasons={watchlistItem.completed_seasons ?? []}
           />
         )}
       </div>
@@ -41,7 +62,7 @@ export default function OverviewTab({
             <div className='flex justify-between items-center group'>
               <span className='text-gray-300'>Network</span>
               <span className='text-right'>
-                {tvShow.networks[0]?.name || 'N/A'}
+                {tvShow.networks?.[0]?.name || 'N/A'}
               </span>
             </div>
             <Separator className='bg-white/5' />
@@ -58,7 +79,7 @@ export default function OverviewTab({
             <div className='flex justify-between items-center group'>
               <span className='text-gray-300'>Runtime</span>
               <span className='text-right'>
-                {formatRuntime(tvShow.episode_run_time)}
+                {formatRuntime(tvShow.episode_run_time ?? [])}
               </span>
             </div>
           </CardContent>

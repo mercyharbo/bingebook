@@ -2,7 +2,6 @@
 
 import { Calendar, Plus, Star, Trash2, Tv } from 'lucide-react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import useSWR from 'swr'
 
@@ -82,14 +81,6 @@ interface Cast {
   order: number
 }
 
-interface Crew {
-  id: number
-  name: string
-  job: string
-  department: string
-  profile_path: string
-}
-
 interface Video {
   id: string
   key: string
@@ -114,7 +105,6 @@ interface Review {
 }
 
 export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
-  const router = useRouter()
   const supabase = createClient()
 
   const {
@@ -188,10 +178,6 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
   }, [tvShow, supabase, tvId, setIsLoadingWatchlist, setWatchlistItem])
 
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
-  const producers =
-    credits?.crew
-      ?.filter((p: Crew) => p.job === 'Executive Producer')
-      .slice(0, 3) || []
   const trailers: Video[] =
     videos?.results?.filter((v: Video) => v.type === 'Trailer') || []
   const tvReviews: Review[] = reviews?.results || []
@@ -317,7 +303,7 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
                   </h1>
                   {tvShow.tagline && (
                     <p className='text-gray-300 font-medium italic max-w-2xl'>
-                      "{tvShow.tagline}"
+                      &quot;{tvShow.tagline}&quot;
                     </p>
                   )}
                 </div>

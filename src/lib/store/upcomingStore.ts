@@ -60,8 +60,8 @@ export const useUpcomingStore = create<UpcomingState>((set) => ({
     set({
       dateRange: range,
     }),
-  setMinDate: (date) => set({}), // Deprecated but kept for compatibility during refactor
-  setMaxDate: (date) => set({}), // Deprecated but kept for compatibility during refactor
+  setMinDate: () => set({}), // Deprecated but kept for compatibility during refactor
+  setMaxDate: () => set({}), // Deprecated but kept for compatibility during refactor
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setCurrentPage: (page) => set({ currentPage: page }),

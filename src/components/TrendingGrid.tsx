@@ -74,7 +74,7 @@ export default function TrendingGrid({
                 <Skeleton className='h-4 w-3/4 opacity-20' />
               </div>
             ))
-          : data?.results?.map((item: any) => (
+          : data?.results?.map((item: Movie) => (
               <MovieCard
                 key={item.id}
                 movie={item}

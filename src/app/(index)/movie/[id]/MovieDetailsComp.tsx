@@ -1,25 +1,12 @@
 'use client'
 
-import {
-  Calendar,
-  ChevronLeft,
-  Clock,
-  Play,
-  Plus,
-  Star,
-  Trash2,
-} from 'lucide-react'
+import { Calendar, ChevronLeft, Clock, Plus, Star, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import LoadingSpinner from '@/components/ui/loading-spinner'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
@@ -29,10 +16,10 @@ import { WatchlistItem } from '@/types/watchlist'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import TrailerDialog from './TrailerDialog'
-import OverviewTab from './components/OverviewTab'
 import CastTab from './components/CastTab'
-import VideosTab from './components/VideosTab'
+import OverviewTab from './components/OverviewTab'
 import ReviewsTab from './components/ReviewsTab'
+import VideosTab from './components/VideosTab'
 
 interface MovieDetails {
   id: number
@@ -104,16 +91,7 @@ interface Review {
   updated_at: string
 }
 
-interface SimilarMovie {
-  id: number
-  title: string
-  poster_path: string
-  vote_average: number
-  release_date: string
-}
-
 export default function MovieDetailsComp({ movieId }: { movieId: string }) {
-  const router = useRouter()
   const supabase = createClient()
 
   const [watchlistItem, setWatchlistItem] = useState<WatchlistItem | null>(null)
@@ -164,14 +142,6 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     fetcher,
   )
 
-  // Fetch similar movies
-  const { data: similar } = useSWR(
-    movieId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`
-      : null,
-    fetcher,
-  )
-
   useEffect(() => {
     const fetchWatchlist = async () => {
       setIsLoadingWatchlist(true)
@@ -213,15 +183,6 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   const trailers: Video[] =
     videos?.results?.filter((video: Video) => video.type === 'Trailer') || []
   const movieReviews: Review[] = reviews?.results || []
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
 
   const formatRuntime = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -321,7 +282,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
             removed.
           </p>
           <Button
-            onClick={() => router.back()}
+            onClick={() => window.history.back()}
             className='rounded-xl px-8 h-12'
           >
             <ChevronLeft className='h-4 w-4 mr-2' />
@@ -389,7 +350,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                   </h1>
                   {movie.tagline && (
                     <p className=' text-gray-300 font-medium italic max-w-2xl'>
-                      "{movie.tagline}"
+                      &quot;{movie.tagline}&quot;
                     </p>
                   )}
                 </div>
@@ -397,9 +358,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                 <div className='flex flex-wrap gap-6 items-center text-white/80 font-medium'>
                   <div className='flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-md backdrop-blur-md border border-white/10'>
                     <Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
-                    <span className=''>
-                      {movie.vote_average.toFixed(1)}
-                    </span>
+                    <span className=''>{movie.vote_average.toFixed(1)}</span>
                     <span className='text-white/40 text-sm'>
                       ({movie.vote_count.toLocaleString()})
                     </span>
@@ -408,9 +367,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                   {movie.runtime > 0 && (
                     <div className='flex items-center gap-2'>
                       <Clock className='h-5 w-5 text-primary' />
-                      <span className=''>
-                        {formatRuntime(movie.runtime)}
-                      </span>
+                      <span className=''>{formatRuntime(movie.runtime)}</span>
                     </div>
                   )}
 

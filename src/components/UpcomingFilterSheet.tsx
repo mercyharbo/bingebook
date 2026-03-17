@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { DateRange } from 'react-day-picker'
 import { Calendar as CalendarIcon, Filter, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -82,7 +81,7 @@ export default function UpcomingFilterSheet() {
     toggleGenre: handleGenreToggle,
     clearAllFilters,
   } = useUpcomingStore()
-  
+
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   return (
@@ -92,7 +91,9 @@ export default function UpcomingFilterSheet() {
         className='w-[400px] h-dvh overflow-auto scrollbar-hide pb-[3rem] p-6 bg-zinc-950 border-white/10 text-white'
       >
         <SheetHeader className='p-0 space-y-2'>
-          <SheetTitle className='text-3xl font-semibold italic text-white'>Filter Movies</SheetTitle>
+          <SheetTitle className='text-3xl font-semibold italic text-white'>
+            Filter Movies
+          </SheetTitle>
           <SheetDescription className='text-gray-400'>
             Customize your movie discovery experience
           </SheetDescription>
@@ -113,7 +114,7 @@ export default function UpcomingFilterSheet() {
                     'text-xs rounded-lg transition-all duration-300',
                     selectedGenres.includes(genre.id.toString())
                       ? 'bg-primary text-white hover:bg-primary/90'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {genre.name}
@@ -136,7 +137,7 @@ export default function UpcomingFilterSheet() {
                     id='date'
                     className={cn(
                       'w-full h-11 justify-start text-left font-medium bg-white/5 border-white/10 rounded-lg hover:bg-white/10 transition-all',
-                      !dateRange?.from && 'text-white/40'
+                      !dateRange?.from && 'text-white/40',
                     )}
                   >
                     <CalendarIcon className='mr-2 h-4 w-4' />
@@ -178,14 +179,20 @@ export default function UpcomingFilterSheet() {
           <Separator className='bg-white/5' />
 
           <div className='space-y-3'>
-            <h3 className='text-sm font-medium text-white/50 uppercase tracking-tight'>Sort By</h3>
+            <h3 className='text-sm font-medium text-white/50 uppercase tracking-tight'>
+              Sort By
+            </h3>
             <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
               <SelectTrigger className='h-12 bg-white/5 border-white/10 rounded-lg'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className='bg-zinc-950 border-white/10 text-white'>
                 {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className='focus:bg-white/10 focus:text-white'>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className='focus:bg-white/10 focus:text-white'
+                  >
                     {option.label}
                   </SelectItem>
                 ))}

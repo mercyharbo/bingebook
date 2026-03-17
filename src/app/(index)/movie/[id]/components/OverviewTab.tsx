@@ -1,9 +1,30 @@
-import Image from 'next/image'
-import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import Image from 'next/image'
+import Link from 'next/link'
 
-export default function OverviewTab({ movie, director }: { movie: any; director: any }) {
+type MovieOverview = {
+  overview?: string
+  status?: string
+  release_date?: string
+  original_language?: string
+  budget?: number
+  revenue?: number
+}
+
+type Person = {
+  id: number
+  name: string
+  profile_path?: string | null
+}
+
+export default function OverviewTab({
+  movie,
+  director,
+}: {
+  movie: MovieOverview
+  director?: Person
+}) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -43,7 +64,9 @@ export default function OverviewTab({ movie, director }: { movie: any; director:
                 />
               </div>
               <div className='pr-4'>
-                <span className='block font-medium text-lg'>{director.name}</span>
+                <span className='block font-medium text-lg'>
+                  {director.name}
+                </span>
                 <span className='text-white/40 text-sm'>Directorial Lead</span>
               </div>
             </Link>
@@ -69,20 +92,26 @@ export default function OverviewTab({ movie, director }: { movie: any; director:
             <Separator className='bg-white/5' />
             <div className='flex justify-between items-center group'>
               <span className='text-gray-300'>Original Language</span>
-              <span className='uppercase text-right'>{movie.original_language}</span>
+              <span className='uppercase text-right'>
+                {movie.original_language}
+              </span>
             </div>
             <Separator className='bg-white/5' />
             <div className='flex justify-between items-center group'>
               <span className='text-gray-300'>Budget</span>
               <span className='text-right'>
-                {movie.budget > 0 ? formatCurrency(movie.budget) : 'N/A'}
+                {movie.budget && movie.budget > 0
+                  ? formatCurrency(movie.budget)
+                  : 'N/A'}
               </span>
             </div>
             <Separator className='bg-white/5' />
             <div className='flex justify-between items-center group'>
               <span className='text-gray-300'>Revenue</span>
               <span className='text-right'>
-                {movie.revenue > 0 ? formatCurrency(movie.revenue) : 'N/A'}
+                {movie.revenue && movie.revenue > 0
+                  ? formatCurrency(movie.revenue)
+                  : 'N/A'}
               </span>
             </div>
           </CardContent>

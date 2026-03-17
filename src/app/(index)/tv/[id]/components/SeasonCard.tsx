@@ -3,11 +3,21 @@ import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import Image from 'next/image'
 import EpisodesDialog from './EpisodesDialog'
 
+type Season = {
+  id: number
+  name: string
+  poster_path?: string | null
+  air_date?: string
+  episode_count: number
+  overview?: string
+  season_number: number
+}
+
 export default function SeasonCard({
   season,
   tvId,
 }: {
-  season: any
+  season: Season
   tvId: string
 }) {
   const { watchlistItem } = useWatchlistStore()

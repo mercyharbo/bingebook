@@ -9,11 +9,11 @@ export async function middleware(req: NextRequest) {
     },
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  const supabase = createServerClient(url || '', anonKey || '', {
+    cookies: {
         get(name: string) {
           return req.cookies.get(name)?.value
         },

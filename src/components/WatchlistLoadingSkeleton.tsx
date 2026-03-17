@@ -24,7 +24,7 @@ export default function WatchlistLoadingSkeleton() {
       </header>
 
       {/* Cards Grid Skeleton */}
-      <div className='grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:px-14 3xl:grid-cols-6'>
+      <div className='grid gap-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
         {Array.from({ length: 18 }).map((_, index) => (
           <div key={index} className='group cursor-pointer'>
             {/* Poster Skeleton */}

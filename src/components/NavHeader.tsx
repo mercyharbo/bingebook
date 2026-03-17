@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useSearchStore } from '@/lib/store/searchStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
-import { Menu, Search, Tv, X } from 'lucide-react'
+import { Bell, Search } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -15,7 +15,7 @@ import SearchResults from './SearchResults'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
+import { SidebarTrigger } from './ui/sidebar'
 
 export default function NavHeader() {
   const router = useRouter()
@@ -25,17 +25,22 @@ export default function NavHeader() {
 
   const [loading, setLoading] = useState(true)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   const {
     searchQuery,
     setSearchQuery,
-    toggleMenu,
-    setToggleMenu,
     showResults,
     setShowResults,
-    isSearchOpen,
-    setIsSearchOpen,
   } = useSearchStore()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const debouncedSearch = useDebounce(searchQuery, 500)
 
@@ -103,7 +108,6 @@ export default function NavHeader() {
   useEffect(() => {
     function handleProfileMenuClickOutside(event: MouseEvent) {
       const target = event.target as Element
-      // Check if the click is outside the profile menu and not on the avatar button
       if (
         profileMenuOpen &&
         !target.closest('[data-profile-menu]') &&
@@ -141,8 +145,6 @@ export default function NavHeader() {
     router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
   }
 
-  const isActive = (href: string) => pathname === href
-
   const getInitials = (name?: string, email?: string) => {
     if (name) {
       const names = name.split(' ')
@@ -153,10 +155,6 @@ export default function NavHeader() {
     return email ? email[0].toUpperCase() : 'U'
   }
 
-  /**
-   * The function `handleUserSignout` signs the user out using Supabase authentication and closes the
-   * menu.
-   */
   const handleUserSignout = async () => {
     const { error } = await supabase.auth.signOut()
 
@@ -170,63 +168,26 @@ export default function NavHeader() {
   }
 
   return (
-    <nav className='sticky top-5 rounded-lg z-50 flex justify-between items-center w-[90%] lg:w-[80%] h-16 bg-gradient-to-r from-white to-blue-100 dark:bg-background/95 backdrop-blur px-5 lg:px-10 mx-auto'>
-      <Link
-        href='/'
-        className={`font-bold text-xl lg:text-2xl flex items-center gap-2 transition-colors text-primary`}
-      >
-        <Tv />
-        BingeBook
-      </Link>
-
-      <div className='hidden md:flex items-center gap-8'>
-        {user && (
-          <Link
-            href='/watchlist'
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-              isActive('/watchlist')
-                ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            Watchlist
-          </Link>
-        )}
-        <Link
-          href='/discover'
-          className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-            isActive('/discover')
-              ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-              : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
-        >
-          Discover
-        </Link>
-        <Link
-          href='/upcoming'
-          className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-            isActive('/upcoming')
-              ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-              : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
-        >
-          Upcoming
-        </Link>
-      </div>
-
-      <div className='flex items-center gap-2 relative'>
-        <div className='hidden lg:block relative' ref={searchRef}>
-          <Input
-            placeholder='Search movies & series...'
-            className='w-64 h-9 border border-gray-300'
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            onFocus={() => setShowResults(!!searchQuery)}
-          />
-          {showResults && debouncedSearch && (
-            <div className='absolute z-50 w-[350px]'>
+    <header className={`sticky top-0 z-40 flex h-20 shrink-0 items-center justify-between gap-4 px-6 lg:px-8 transition-all duration-300 ${isScrolled ? 'bg-black/60 backdrop-blur-xl border-b border-white/5 shadow-2xl' : 'bg-transparent'}`}>
+      <div className="flex items-center gap-4 flex-1">
+        <SidebarTrigger className="-ml-1 size-10 hover:bg-white/10 rounded-lg transition-all active:scale-95" />
+        
+        <div className="relative w-full max-w-lg" ref={searchRef}>
+          <div className="relative flex items-center group">
+            <Search className="absolute left-4 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input
+              type="search"
+              placeholder="Search for films, directors, or actors..."
+              className="w-full h-12 rounded-lg bg-white/5 border-white/5 pl-11 pr-4 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/10 transition-all placeholder:text-muted-foreground/60"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setShowResults(!!searchQuery)}
+            />
+          </div>
+          {showResults && debouncedSearch && searchResults?.results && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-2">
               <SearchResults
-                results={searchResults?.results || []}
+                results={searchResults.results || []}
                 onViewAll={() => {
                   handleViewAllResults()
                   setShowResults(false)
@@ -235,191 +196,86 @@ export default function NavHeader() {
             </div>
           )}
         </div>
+      </div>
 
-        <Button
-          variant='ghost'
-          size='icon'
-          className='lg:hidden'
-          onClick={() => setIsSearchOpen(!isSearchOpen)}
+      <div className="flex items-center gap-6">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative size-10 rounded-lg hover:bg-white/10 transition-all active:scale-95"
         >
-          <Search className='h-4 w-4' />
-          <span className='sr-only'>Toggle search</span>
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-primary border-2 border-background" />
+          <span className="sr-only">Notifications</span>
         </Button>
 
-        {loading ? (
-          <div className='size-8 animate-pulse bg-gray-200 rounded-full' />
-        ) : user ? (
-          <Button
-            variant={'ghost'}
-            size={'icon'}
-            className='shadow-none cursor-pointer hover:bg-transparent px-0'
-            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            data-profile-trigger
-          >
-            <Avatar className='size-8 rounded-full'>
-              {user.user_metadata?.avatar_url && (
-                <AvatarImage
-                  src={user.user_metadata.avatar_url}
-                  alt='User avatar'
-                  className='object-cover object-top'
-                />
-              )}
-              <AvatarFallback className='text-xs'>
-                {getInitials(
-                  user.user_metadata?.full_name || user.user_metadata?.name,
-                  user.email
+        <div className="relative">
+          {loading ? (
+            <div className="h-10 w-10 animate-pulse rounded-xl bg-white/5" />
+          ) : user ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-lg hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              data-profile-trigger
+            >
+              <Avatar className="h-10 w-10 border border-white/10 rounded-lg">
+                {user.user_metadata?.avatar_url && (
+                  <AvatarImage
+                    src={user.user_metadata.avatar_url}
+                    alt="User avatar"
+                    className="object-cover"
+                  />
                 )}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        ) : (
-          <div className='hidden items-center gap-5 lg:flex'>
+                <AvatarFallback className="text-xs bg-white/5 text-muted-foreground font-medium">
+                  {getInitials(
+                    user.user_metadata?.full_name || user.user_metadata?.name,
+                    user.email
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-[-2px] right-[-2px] h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+            </Button>
+          ) : (
             <Link
-              href='/auth/login'
-              className='hidden md:inline-block text-sm font-medium text-primary hover:text-primary/80'
+              href="/auth/login"
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20"
             >
               Sign In
             </Link>
-          </div>
-        )}
+          )}
 
-        {profileMenuOpen && (
-          <div className='absolute top-full right-0' data-profile-menu>
-            <div className='flex flex-col justify-start items-start gap-2 bg-white group-hover:cursor-pointer shadow-lg rounded-lg ring-1 ring-gray-300 p-2 w-36'>
-              <Button
-                variant={'secondary'}
-                onClick={() => setProfileMenuOpen(false)}
-                asChild
-                className='w-full justify-start'
-              >
-                <Link href='/profile'>Profile</Link>
-              </Button>
-
-              <Button
-                variant={'secondary'}
-                onClick={handleUserSignout}
-                className='w-full justify-start'
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <Sheet open={toggleMenu} onOpenChange={setToggleMenu}>
-          <SheetTrigger asChild>
-            <Button variant='ghost' size='icon' className='md:hidden'>
-              <Menu className='size-4' />
-              <span className='sr-only'>Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side='left' className='sm:w-[70%]'>
-            <Link
-              href='/'
-              className={`font-bold text-xl px-5 pt-4 lg:text-2xl flex items-center gap-2 transition-colors ${
-                isActive('/')
-                  ? 'text-primary font-semibold'
-                  : 'text-primary hover:text-primary/80'
-              }`}
+          {profileMenuOpen && (
+            <div
+              className="absolute right-0 top-full mt-3 w-56 rounded-lg border border-white/10 bg-black/60 backdrop-blur-2xl p-2 text-popover-foreground shadow-2xl animate-in fade-in-80 zoom-in-95"
+              data-profile-menu
             >
-              <Tv />
-              BingeBook
-            </Link>
-
-            <div className='flex flex-col gap-3 pt-[3rem] px-5'>
-              {user && (
-                <Link
-                  href='/watchlist'
-                  className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
-                    isActive('/watchlist')
-                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                      : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                  onClick={() => setToggleMenu(false)}
-                >
-                  Watchlist
-                </Link>
-              )}
-              <Link
-                href='/discover'
-                className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
-                  isActive('/discover')
-                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                    : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                onClick={() => setToggleMenu(false)}
-              >
-                Discover
-              </Link>
-              <Link
-                href='/upcoming'
-                className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
-                  isActive('/upcoming')
-                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                    : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                onClick={() => setToggleMenu(false)}
-              >
-                Upcoming
-              </Link>
-
-              {!user && (
-                <Link
-                  href='/auth/login'
-                  className={`px-4 py-3 rounded-lg text-lg font-medium transition-all duration-200 ${
-                    isActive('/auth/login')
-                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
-                      : 'text-gray-600 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                  onClick={() => setToggleMenu(false)}
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {isSearchOpen && (
-        <div className='absolute top-full left-0 right-0 lg:hidden bg-white rounded-xl dark:bg-background border-b border-gray-200 dark:border-gray-800 p-4 shadow-sm'>
-          <div className='flex items-center gap-2'>
-            <div className='relative flex-1' ref={searchRef}>
-              <Input
-                placeholder='Search movies & series...'
-                className='w-full border border-gray-600'
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                onFocus={() => setShowResults(!!searchQuery)}
-                autoFocus
-              />
-              {showResults && debouncedSearch && (
-                <div className='absolute z-50 left-0 right-0 mt-2 w-full'>
-                  <SearchResults
-                    results={searchResults?.results || []}
-                    onViewAll={() => {
-                      handleViewAllResults()
-                      setIsSearchOpen(false)
-                      setShowResults(false)
-                    }}
-                  />
+              <div className="flex flex-col gap-1">
+                <div className="px-3 py-2 border-b border-white/5">
+                  <p className="text-xs text-muted-foreground">Signed in as</p>
+                  <p className="text-sm font-medium truncate">{user?.email}</p>
                 </div>
-              )}
+                <Button
+                  variant="ghost"
+                  onClick={() => setProfileMenuOpen(false)}
+                  asChild
+                  className="w-full justify-start text-sm hover:bg-white/5 rounded-lg h-10 mt-1"
+                >
+                  <Link href="/profile">Profile Settings</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleUserSignout}
+                  className="w-full justify-start text-sm text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg h-10"
+                >
+                  Sign Out
+                </Button>
+              </div>
             </div>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => {
-                setIsSearchOpen(false)
-                setShowResults(false)
-              }}
-            >
-              <X className='h-4 w-4' />
-              <span className='sr-only'>Close search</span>
-            </Button>
-          </div>
+          )}
         </div>
-      )}
-    </nav>
+      </div>
+    </header>
   )
 }

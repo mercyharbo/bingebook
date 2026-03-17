@@ -222,7 +222,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
             <div className='flex-1 w-full flex lg:justify-start lg:items-start flex-col justify-center items-center space-y-4'>
               <div className='space-y-3 w-full'>
                 <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-                  <h1 className='text-3xl lg:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 leading-tight'>
+                  <h1 className='text-3xl lg:text-4xl font-medium lg:font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 leading-tight'>
                     {person.name}
                   </h1>
                   <div className='flex items-center gap-3'>
@@ -238,7 +238,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       className='px-3 py-1.5 text-sm border-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200'
                     >
                       <TrendingUp className='size-4 mr-1.5 text-blue-500' />
-                      <span className='font-semibold'>
+                      <span className='font-medium'>
                         {Math.round(person.popularity)}
                       </span>
                       <span className='ml-1 text-slate-600 dark:text-slate-400'>
@@ -252,7 +252,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6 w-full bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 shadow-sm'>
                   {person.birthday && (
                     <div className='relative space-y-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'>
-                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full'>
+                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full'>
                         Date of Birth
                       </span>
                       <p className='text-base font-medium text-slate-900 dark:text-white mt-2'>
@@ -268,7 +268,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
                   {person.place_of_birth && (
                     <div className='relative space-y-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'>
-                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full'>
+                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full'>
                         Place of Birth
                       </span>
                       <p className='text-base font-medium text-slate-900 dark:text-white mt-2'>
@@ -279,7 +279,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
                   {person.also_known_as && person.also_known_as.length > 0 && (
                     <div className='md:col-span-2 relative space-y-3 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'>
-                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full'>
+                      <span className='absolute -top-2 left-3 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full'>
                         Also Known As
                       </span>
                       <div className='flex flex-wrap gap-2 mt-2'>
@@ -317,7 +317,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                         {person.deathday ? 'Lived' : 'Age'}
                       </p>
                       {/* <CHANGE> Reduced text size from text-lg to text-sm */}
-                      <p className='text-sm font-bold text-slate-900 dark:text-white'>
+                      <p className='text-sm font-medium text-slate-900 dark:text-white'>
                         {person.deathday
                           ? `${calculateAge(
                               person.birthday,
@@ -336,7 +336,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       <p className='text-xs text-slate-600 dark:text-slate-400 font-medium'>
                         Born in
                       </p>
-                      <p className='text-sm font-bold text-slate-900 dark:text-white'>
+                      <p className='text-sm font-medium text-slate-900 dark:text-white'>
                         {person.place_of_birth.split(',').slice(-1)[0].trim()}
                       </p>
                     </div>
@@ -349,7 +349,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                     <p className='text-xs text-slate-600 dark:text-slate-400 font-medium'>
                       Total Credits
                     </p>
-                    <p className='text-sm font-bold text-slate-900 dark:text-white'>
+                    <p className='text-sm font-medium text-slate-900 dark:text-white'>
                       {(movieCredits?.cast?.length || 0) +
                         (tvCredits?.cast?.length || 0)}{' '}
                       projects
@@ -429,7 +429,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                 <div className='flex items-center gap-3 relative'>
                   <div className='absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full'></div>
                   <Users className='w-6 h-6 text-blue-600 dark:text-blue-400' />
-                  <h2 className='text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent'>
+                  <h2 className='text-2xl font-medium bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent'>
                     Biography
                   </h2>
                 </div>
@@ -442,7 +442,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
           <TabsContent value='movies' className='space-y-6'>
             <div className='flex items-center justify-between'>
-              <h2 className='text-2xl font-bold text-slate-900 dark:text-white'>
+              <h2 className='text-2xl font-medium text-slate-900 dark:text-white'>
                 Movie Credits
               </h2>
               <Badge variant='outline' className='px-4 py-2'>
@@ -474,7 +474,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                     </div>
                   </div>
                   <div className='space-y-1'>
-                    <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
+                    <h3 className='font-medium text-base line-clamp-1 text-slate-900 dark:text-white'>
                       {movie.title}
                     </h3>
                     <div className='flex justify-between text-xs text-muted-foreground'>
@@ -536,7 +536,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
           <TabsContent value='tv' className='space-y-6'>
             <div className='flex items-center justify-between'>
-              <h2 className='text-2xl font-bold text-slate-900 dark:text-white'>
+              <h2 className='text-2xl font-medium text-slate-900 dark:text-white'>
                 TV Credits
               </h2>
               <Badge variant='outline' className='px-4 py-2'>
@@ -568,7 +568,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                     </div>
                   </div>
                   <div className='space-y-1'>
-                    <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
+                    <h3 className='font-medium text-base line-clamp-1 text-slate-900 dark:text-white'>
                       {show.name}
                     </h3>
                     <div className='flex justify-between text-xs text-muted-foreground'>
@@ -626,7 +626,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
           <TabsContent value='upcoming' className='space-y-5'>
             <div className='flex items-center justify-between'>
-              <h2 className='text-xl lg:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3'>
+              <h2 className='text-xl lg:text-2xl font-medium text-slate-900 dark:text-white flex items-center gap-3'>
                 <Clock className='w-8 h-8 text-orange-600' />
                 Upcoming Projects
               </h2>
@@ -663,7 +663,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
                       </div>
                     </div>
                     <div className='space-y-1'>
-                      <h3 className='font-semibold text-base line-clamp-1 text-slate-900 dark:text-white'>
+                      <h3 className='font-medium text-base line-clamp-1 text-slate-900 dark:text-white'>
                         {project.title}
                       </h3>
                       <div className='flex justify-between text-xs text-muted-foreground'>
@@ -684,7 +684,7 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
               <Card className=''>
                 <CardContent className='p-12 text-center space-y-4'>
                   <Clock className='w-16 h-16 text-slate-400 mx-auto' />
-                  <h3 className='text-xl font-bold text-slate-900 dark:text-white'>
+                  <h3 className='text-xl font-medium text-slate-900 dark:text-white'>
                     No Upcoming Projects
                   </h3>
                   <p className='text-slate-600 dark:text-slate-400'>

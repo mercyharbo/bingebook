@@ -172,7 +172,7 @@ export default function ProfilePage() {
                     className='object-cover object-top'
                   />
                 )}
-                <AvatarFallback className='text-3xl bg-gray-500 text-white font-bold'>
+                <AvatarFallback className='text-3xl bg-gray-500 text-white font-medium'>
                   {getInitials(fullName, user?.email)}
                 </AvatarFallback>
               </Avatar>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className='space-y-3 text-center'>
-              <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>
+              <h1 className='text-3xl font-medium text-gray-900 dark:text-white'>
                 {fullName || 'User'}
               </h1>
               <div className='flex flex-col sm:flex-row items-center gap-1 lg:gap-4 text-gray-600 dark:text-gray-400'>

@@ -1,11 +1,12 @@
 import type { MovieOnly } from '@/types/movie'
 import { create } from 'zustand'
 
+import { DateRange } from 'react-day-picker'
+
 interface UpcomingState {
   upcomingMovies: MovieOnly[] | null
   selectedGenres: string[]
-  minDate: string
-  maxDate: string
+  dateRange: DateRange | undefined
   searchQuery: string
   sortBy: string
   currentPage: number
@@ -18,6 +19,7 @@ interface UpcomingState {
   setUpcomingMovies: (movies: MovieOnly[] | null) => void
   setSelectedGenres: (genres: string[]) => void
   toggleGenre: (genreId: string) => void
+  setDateRange: (range: DateRange | undefined) => void
   setMinDate: (date: string) => void
   setMaxDate: (date: string) => void
   setSearchQuery: (query: string) => void
@@ -27,8 +29,8 @@ interface UpcomingState {
   setIsFilterOpen: (open: boolean) => void
   setSelectedMovie: (movie: MovieOnly | null) => void
   setIsModalOpen: (open: boolean) => void
-  setCurrentSlide: (slide: number) => void
-  setWatchlistIds: (ids: number[]) => void
+  setCurrentSlide: (slide: number | ((prev: number) => number)) => void
+  setWatchlistIds: (ids: number[] | ((prev: number[]) => number[])) => void
   clearAllFilters: () => void
   resetPagination: () => void
 }
@@ -36,8 +38,7 @@ interface UpcomingState {
 export const useUpcomingStore = create<UpcomingState>((set) => ({
   upcomingMovies: null,
   selectedGenres: [],
-  minDate: '',
-  maxDate: '',
+  dateRange: { from: undefined, to: undefined },
   searchQuery: '',
   sortBy: 'popularity.desc',
   currentPage: 1,
@@ -55,8 +56,12 @@ export const useUpcomingStore = create<UpcomingState>((set) => ({
         ? state.selectedGenres.filter((id) => id !== genreId)
         : [...state.selectedGenres, genreId],
     })),
-  setMinDate: (date) => set({ minDate: date }),
-  setMaxDate: (date) => set({ maxDate: date }),
+  setDateRange: (range) =>
+    set({
+      dateRange: range,
+    }),
+  setMinDate: (date) => set({}), // Deprecated but kept for compatibility during refactor
+  setMaxDate: (date) => set({}), // Deprecated but kept for compatibility during refactor
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setCurrentPage: (page) => set({ currentPage: page }),
@@ -64,13 +69,19 @@ export const useUpcomingStore = create<UpcomingState>((set) => ({
   setIsFilterOpen: (open) => set({ isFilterOpen: open }),
   setSelectedMovie: (movie) => set({ selectedMovie: movie }),
   setIsModalOpen: (open) => set({ isModalOpen: open }),
-  setCurrentSlide: (slide) => set({ currentSlide: slide }),
-  setWatchlistIds: (ids) => set({ watchlistIds: ids }),
+  setCurrentSlide: (slide) =>
+    set((state) => ({
+      currentSlide:
+        typeof slide === 'function' ? slide(state.currentSlide) : slide,
+    })),
+  setWatchlistIds: (ids) =>
+    set((state) => ({
+      watchlistIds: typeof ids === 'function' ? ids(state.watchlistIds) : ids,
+    })),
   clearAllFilters: () =>
     set({
       selectedGenres: [],
-      minDate: '',
-      maxDate: '',
+      dateRange: { from: undefined, to: undefined },
       searchQuery: '',
       sortBy: 'popularity.desc',
       currentPage: 1,

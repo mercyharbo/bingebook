@@ -46,7 +46,7 @@ export default function FilterSheet({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side='right'
-        className='w-[400px] h-[90dvh] mr-5 rounded-xl my-auto overflow-auto scrollbar-hide pb-[3rem] p-2'
+        className='w-[400px] h-[90dvh] mr-5 rounded-lg my-auto overflow-auto scrollbar-hide pb-[3rem] p-2'
       >
         <SheetHeader>
           <SheetTitle>Filter Your Watchlist</SheetTitle>
@@ -66,7 +66,7 @@ export default function FilterSheet({
                   key={filter.id}
                   variant={activeFilter === filter.id ? 'default' : 'outline'}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`text-sm px-2 py-2.5 h-auto min-h-[40px] rounded-md transition-all duration-200 ${
+                  className={`text-sm px-2 py-2.5 h-auto text-white min-h-[40px] rounded-md transition-all duration-200 ${
                     activeFilter === filter.id
                       ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg transform scale-105'
                       : 'border-gray-200 dark:border-gray-700 hover:shadow-md'

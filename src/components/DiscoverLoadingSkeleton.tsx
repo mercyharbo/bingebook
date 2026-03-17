@@ -14,7 +14,7 @@ export default function DiscoverLoadingSkeleton() {
             <div className='container mx-auto px-8 lg:px-16'>
               <div className='max-w-2xl space-y-6'>
                 <div className='space-y-2'>
-                  <Skeleton className='h-8 w-32 rounded-3xl' />
+                  <Skeleton className='h-8 w-32 rounded-lg' />
                   <Skeleton className='h-12 w-3/4 lg:h-16' />
                 </div>
 
@@ -52,7 +52,7 @@ export default function DiscoverLoadingSkeleton() {
         </header>
 
         {/* Media Grid Skeleton */}
-        <section className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
+        <div className='grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
           {Array.from({ length: 20 }, (_, i) => (
             <div key={i} className='space-y-3'>
               <Skeleton className='w-full h-96 rounded-lg' />
@@ -65,7 +65,7 @@ export default function DiscoverLoadingSkeleton() {
               </div>
             </div>
           ))}
-        </section>
+        </div>
 
         {/* Pagination Skeleton */}
         <div className='flex justify-center items-center gap-2 py-6'>

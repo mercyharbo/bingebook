@@ -136,7 +136,7 @@ function SearchContent() {
             <Zap className='w-12 h-12 text-red-500' />
           </div>
           <div className='space-y-2'>
-            <h1 className='text-2xl font-bold text-red-600 dark:text-red-400'>
+            <h1 className='text-2xl font-medium text-red-600 dark:text-red-400'>
               Oops! Something went wrong
             </h1>
             <p className='text-gray-600 dark:text-gray-300'>
@@ -156,7 +156,7 @@ function SearchContent() {
         <div className='text-center space-y-6'>
           <LoadingSpinner size={60} />
           <div className='space-y-2'>
-            <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>
+            <h2 className='text-xl font-medium text-gray-900 dark:text-white'>
               Searching the universe...
             </h2>
             <p className='text-gray-600 dark:text-gray-300'>
@@ -178,7 +178,7 @@ function SearchContent() {
             <Search className='w-16 h-16 text-gray-400' />
           </div>
           <div className='space-y-3'>
-            <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>
+            <h1 className='text-3xl font-medium text-gray-900 dark:text-white'>
               No matches found
             </h1>
             <p className='text-lg text-gray-600 dark:text-gray-300'>
@@ -204,7 +204,7 @@ function SearchContent() {
             <Search className='w-6 h-6 text-blue-600 dark:text-blue-400' />
           </div>
           <div>
-            <h1 className='lg:text-3xl text-xl font-semibold text-gray-900 dark:text-white'>
+            <h1 className='lg:text-3xl text-xl font-medium text-gray-900 dark:text-white'>
               Search Results
             </h1>
             <p className='text-gray-600 dark:text-gray-300'>
@@ -246,7 +246,7 @@ function SearchContent() {
                 {/* Media type badge with creative styling */}
                 <div className='absolute top-4 right-4'>
                   <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                       getMediaType(item) === 'movie'
                         ? 'bg-blue-500/90 text-white'
                         : getMediaType(item) === 'tv'
@@ -276,7 +276,7 @@ function SearchContent() {
 
               {/*  Enhanced content area with better typography */}
               <div className='p-2 space-y-1'>
-                <h2 className='text-base font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300'>
+                <h2 className='text-base font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300'>
                   {getDisplayTitle(item)}
                 </h2>
 
@@ -286,7 +286,7 @@ function SearchContent() {
                   </p>
                   <div className='flex items-center gap-1 text-yellow-500'>
                     <Star className='w-4 h-4 fill-current' />
-                    <span className='text-xs font-semibold'>
+                    <span className='text-xs font-medium'>
                       {(Math.random() * 4 + 6).toFixed(1)}
                     </span>
                   </div>
@@ -393,7 +393,7 @@ function SearchContent() {
             <div className='text-center pt-4'>
               <p className='text-sm text-gray-600 dark:text-gray-400'>
                 Showing page{' '}
-                <span className='font-semibold text-blue-600 dark:text-blue-400'>
+                <span className='font-medium text-blue-600 dark:text-blue-400'>
                   {page}
                 </span>{' '}
                 of <span className='font-semibold'>{data.total_pages}</span>
@@ -413,7 +413,7 @@ function SearchFallback() {
       <div className='text-center space-y-6'>
         <LoadingSpinner size={60} />
         <div className='space-y-2'>
-          <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>
+          <h2 className='text-xl font-medium text-gray-900 dark:text-white'>
             Loading search page...
           </h2>
           <p className='text-gray-600 dark:text-gray-300'>

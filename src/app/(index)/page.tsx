@@ -2,47 +2,28 @@
 
 import { HeroSkeleton } from '@/app/(index)/loading-skeletons'
 import HeroSlider from '@/components/HeroSlider'
-import TopRatedTVShows from '@/components/TopRatedTVShows'
-import TrendingMovies from '@/components/TrendingMovies'
-import UpcomingReleases from '@/components/UpcomingReleases'
+import TrendingGrid from '@/components/TrendingGrid'
+import { useHomeStore } from '@/lib/store/homeStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
-import type { Movie } from '@/types/movie'
-import { isAfter, parseISO } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 import useSWR from 'swr'
 
 export default function HomePageComp() {
   const supabase = createClient()
-  const [topRated, setTopRated] = useState<Movie[] | null>(null)
-  const [upcomingMovies, setUpcomingMovies] = useState<Movie[] | null>(null)
-  const [moviesList, setMoviesList] = useState<Movie[] | null>(null)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [watchlistIds, setWatchlistIds] = useState<number[]>([])
+  
+  const {
+    currentSlide,
+    setCurrentSlide,
+    watchlistIds,
+    setWatchlistIds,
+    moviesList,
+    setMoviesList,
+  } = useHomeStore()
 
   const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
-
-  const { isLoading: topRatedLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/tv/top_rated`,
-    fetcher,
-    {
-      onSuccess: (data) => {
-        setTopRated(data.results)
-      },
-    }
-  )
-
-  const { isLoading: upcomingLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/movie/upcoming`,
-    fetcher,
-    {
-      onSuccess: (data) => {
-        setUpcomingMovies(data.results)
-      },
-    }
-  )
 
   const { isLoading: moviesLoading } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_URL}/trending/movie/week`,
@@ -66,7 +47,6 @@ export default function HomePageComp() {
         .from('watchlist')
         .select('tmdb_id')
         .eq('user_id', userId)
-        .eq('media_type', 'movie')
 
       if (error) {
         console.error('Error fetching watchlist:', error)
@@ -78,43 +58,34 @@ export default function HomePageComp() {
     }
 
     fetchWatchlist()
-  }, [supabase])
+  }, [supabase, setWatchlistIds])
 
   // Auto-slide functionality
   useEffect(() => {
     if (!moviesList || moviesList.length === 0) return
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 5))
+      setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 10))
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [moviesList])
+  }, [moviesList, setCurrentSlide])
 
   const nextSlide = () => {
     if (!moviesList) return
-    setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 5))
+    setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 10))
   }
 
   const prevSlide = () => {
     if (!moviesList) return
     setCurrentSlide(
       (prev) =>
-        (prev - 1 + Math.min(moviesList.length, 5)) %
-        Math.min(moviesList.length, 5)
+        (prev - 1 + Math.min(moviesList.length, 10)) %
+        Math.min(moviesList.length, 10)
     )
   }
 
-  const unreleasedMovies = (upcomingMovies ?? []).filter(
-    (item: Movie): item is Movie & { release_date: string } =>
-      item.release_date != null &&
-      isAfter(
-        parseISO(item.release_date),
-        new Date('2025-08-06T02:49:00+01:00')
-      )
-  )
-
-  const addToWatchlist = async (movie: Movie) => {
+  const addToWatchlist = async (movie: any) => {
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession()
 
@@ -130,7 +101,7 @@ export default function HomePageComp() {
     const { error } = await supabase.from('watchlist').insert({
       user_id: userId,
       tmdb_id: movie?.id,
-      media_type: 'movie',
+      media_type: movie.media_type || (movie.title ? 'movie' : 'tv'),
       tmdb_data: tmdbData,
       poster_path: movie?.poster_path,
       is_seen: false,
@@ -154,12 +125,12 @@ export default function HomePageComp() {
   // Check if movie is in watchlist
   const isInWatchlist = (movieId: number) => watchlistIds.includes(movieId)
 
-  if (moviesLoading || upcomingLoading || topRatedLoading) {
+  if (moviesLoading) {
     return <HeroSkeleton />
   }
 
   return (
-    <main className='-mt-16'>
+    <main className="flex flex-col min-h-screen bg-gradient-premium overflow-x-hidden">
       {/* Hero Section */}
       {moviesList && moviesList.length > 0 && (
         <HeroSlider
@@ -174,23 +145,8 @@ export default function HomePageComp() {
         />
       )}
 
-      <div className='p-5 lg:p-10 space-y-10'>
-        <TrendingMovies
-          moviesList={moviesList}
-          isInWatchlist={isInWatchlist}
-          addToWatchlist={addToWatchlist}
-          addingToWatchlist={addingToWatchlist}
-        />
-
-        <TopRatedTVShows
-          topRated={topRated}
-          isInWatchlist={isInWatchlist}
-          addToWatchlist={addToWatchlist}
-          addingToWatchlist={addingToWatchlist}
-        />
-
-        <UpcomingReleases
-          unreleasedMovies={unreleasedMovies}
+      <div className="flex flex-col gap-16 px-6 py-12 lg:px-12">
+        <TrendingGrid
           isInWatchlist={isInWatchlist}
           addToWatchlist={addToWatchlist}
           addingToWatchlist={addingToWatchlist}

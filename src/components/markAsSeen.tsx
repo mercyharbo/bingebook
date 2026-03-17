@@ -38,7 +38,7 @@ export default function MarkMovieSeenButton({
         toast.success(
           newStatus
             ? `"${title}" marked as seen!`
-            : `"${title}" unmarked as seen`
+            : `"${title}" unmarked as seen`,
         )
         onToggle?.(newStatus)
       }
@@ -56,10 +56,10 @@ export default function MarkMovieSeenButton({
       onClick={handleToggleSeen}
       disabled={isLoading}
       className={cn(
-        'w-full h-10 text-white',
+        'w-full text-white',
         isSeen
           ? 'bg-green-600 hover:bg-green-700'
-          : 'bg-blue-600 hover:bg-blue-700'
+          : 'bg-blue-600 hover:bg-blue-700',
       )}
     >
       <Check className='size-4' />

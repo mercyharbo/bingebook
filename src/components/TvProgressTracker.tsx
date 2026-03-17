@@ -247,8 +247,9 @@ export default function TVProgressTracker({
       <DialogTrigger asChild>
         <Button
           variant={allSeasonsCompleted ? 'default' : 'outline'}
+          size={'lg'}
           className={cn(
-            'w-full h-10 transition-all duration-300',
+            'w-full transition-all duration-300 text-white',
             allSeasonsCompleted &&
               'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
           )}
@@ -256,11 +257,13 @@ export default function TVProgressTracker({
           {allSeasonsCompleted ? 'Seen all seasons' : 'Manage Episodes'}
         </Button>
       </DialogTrigger>
-      <DialogContent className='max-h-[80vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>Episode Progress - Season {selectedSeason}</DialogTitle>
-          <DialogDescription>
-            Mark episodes as seen or unseen for this season.
+      <DialogContent className='max-w-xl w-[95%] sm:w-full p-6 md:p-8 bg-background border-white/10 rounded-lg shadow-2xl max-h-[60dvh] sm:max-w-2xl overflow-y-auto scrollbar-hide'>
+        <DialogHeader className='space-y-2 mb-4'>
+          <DialogTitle className='text-3xl font-semibold italic text-white'>
+            Episode Progress
+          </DialogTitle>
+          <DialogDescription className='text-gray-400'>
+            Mark episodes as seen or unseen for Season {selectedSeason}.
           </DialogDescription>
         </DialogHeader>
         <div className='space-y-4'>
@@ -310,7 +313,7 @@ export default function TVProgressTracker({
           {isLoading ? (
             <LoadingSpinner size={40} />
           ) : error ? (
-            <div className='text-center text-sm text-red-600 dark:text-red-400'>
+            <div className='text-center text-sm text-red-600 dark:text-red-400 font-medium'>
               Failed to load episodes
             </div>
           ) : episodes.length === 0 ? (
@@ -338,7 +341,7 @@ export default function TVProgressTracker({
                     onClick={() => toggleEpisode(episodeCode)}
                     disabled={isLoadingEpisode || isLoading || !available}
                     className={cn(
-                      'text-xs relative transition-all duration-200',
+                      'text-xs relative transition-all duration-200 text-white',
                       isLoadingEpisode && 'opacity-70 cursor-not-allowed',
                       !available &&
                         'opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 cursor-not-allowed'
@@ -348,16 +351,16 @@ export default function TVProgressTracker({
                     {isLoadingEpisode ? (
                       <div className='flex items-center justify-center gap-2 py-1'>
                         <LoadingSpinner size={20} />
-                        <span className='text-[10px] leading-tight opacity-75'>
+                        <span className='text-[10px] leading-tight opacity-75 font-medium uppercase'>
                           {episodeCode}
                         </span>
                       </div>
                     ) : (
                       <div className='flex  items-center justify-center gap-0.5'>
-                        <span className='leading-tight'>{episodeCode}</span>
-                        {isSeen && <span className='text-[10px]'>✓</span>}
+                        <span className='leading-tight font-medium'>{episodeCode}</span>
+                        {isSeen && <span className='text-[10px] font-medium'>✓</span>}
                         {!available && (
-                          <span className='text-[8px] ml-0.5'>🔒</span>
+                          <span className='text-[8px] ml-0.5 font-medium'>🔒</span>
                         )}
                       </div>
                     )}
@@ -368,7 +371,7 @@ export default function TVProgressTracker({
           )}
 
           {completedSeasons.includes(parseInt(selectedSeason)) && (
-            <Badge className='bg-green-500 text-white text-xs'>
+            <Badge className='bg-green-500 text-white text-xs font-medium'>
               Season Completed
             </Badge>
           )}

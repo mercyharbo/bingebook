@@ -110,34 +110,34 @@ export default function FilterSheet() {
     <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
       <SheetContent
         side='right'
-        className='w-[400px] h-[90dvh] mr-5 rounded-xl my-auto overflow-auto scrollbar-hide pb-[3rem] p-2'
+        className='w-[400px] h-dvh mr-0 md:mr-5 md:rounded-lg my-auto overflow-auto scrollbar-hide pb-[3rem] p-6 bg-zinc-950 border-white/10 text-white'
       >
-        <SheetHeader>
-          <SheetTitle>
+        <SheetHeader className='space-y-2'>
+          <SheetTitle className='text-3xl font-semibold italic text-white'>
             Filter {mediaType === 'movie' ? 'Movies' : 'TV Shows'}
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className='text-gray-400'>
             Customize your {mediaType === 'movie' ? 'movie' : 'TV show'}{' '}
             discovery experience
           </SheetDescription>
         </SheetHeader>
         <div className='p-4 space-y-5'>
           <div>
-            <h3 className='font-semibold mb-3 flex items-center gap-2'>
-              <Filter className='h-4 w-4' />
+            <h3 className='text-sm font-medium text-white/50 mb-4 flex items-center gap-2 uppercase tracking-tight'>
+              <Filter className='h-3 w-3' />
               Genres
             </h3>
             <div className='flex flex-wrap gap-2'>
               {genres.map((genre) => (
                 <Button
                   key={genre.id}
-                  variant={
-                    selectedGenres.includes(genre.id.toString())
-                      ? 'default'
-                      : 'outline'
-                  }
                   onClick={() => toggleGenre(genre.id.toString())}
-                  className='text-xs'
+                  className={cn(
+                    'text-xs rounded-lg transition-all duration-300',
+                    selectedGenres.includes(genre.id.toString())
+                      ? 'bg-primary text-white hover:bg-primary/90'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                  )}
                 >
                   {genre.name}
                 </Button>
@@ -145,9 +145,9 @@ export default function FilterSheet() {
             </div>
           </div>
 
-          <div className='space-y-5'>
-            <h3 className='font-semibold mb-3 flex items-center gap-2'>
-              <CalendarIcon className='h-4 w-4' />
+          <div className='space-y-4 pt-4 border-t border-white/5'>
+            <h3 className='text-sm font-medium text-white/50 mb-4 flex items-center gap-2 uppercase tracking-tight'>
+              <CalendarIcon className='h-3 w-3' />
               Release Date Range
             </h3>
             <div className='grid gap-2'>
@@ -155,10 +155,9 @@ export default function FilterSheet() {
                 <PopoverTrigger asChild>
                   <Button
                     id='date'
-                    variant='outline'
                     className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !dateRange && 'text-muted-foreground'
+                      'w-full h-12 justify-start text-left font-medium bg-white/5 border-white/10 rounded-lg hover:bg-white/10 transition-all',
+                      !dateRange && 'text-white/40'
                     )}
                   >
                     <CalendarIcon className='mr-2 h-4 w-4' />
@@ -177,9 +176,8 @@ export default function FilterSheet() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className='w-auto p-0'
+                  className='w-auto p-0 bg-zinc-950 border-white/10'
                   align='start'
-                  // sideOffset={5}
                 >
                   <Calendar
                     mode='range'
@@ -198,19 +196,19 @@ export default function FilterSheet() {
             </div>
           </div>
 
-          <div className='flex flex-col justify-start gap-5 '>
-            <div className='space-y-2'>
-              <h3 className='font-semibold'>Sort By</h3>
+          <div className='flex flex-col justify-start gap-6 pt-4 border-t border-white/5'>
+            <div className='space-y-3'>
+              <h3 className='text-sm font-medium text-white/50 uppercase tracking-tight'>Sort By</h3>
               <Select
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value)}
               >
-                <SelectTrigger size='lg' className='w-full'>
+                <SelectTrigger size='lg' className='w-full h-12 bg-white/5 border-white/10 rounded-lg'>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-zinc-950 border-white/10 text-white'>
                   {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={option.value} value={option.value} className='focus:bg-white/10 focus:text-white'>
                       {option.label}
                     </SelectItem>
                   ))}
@@ -218,15 +216,15 @@ export default function FilterSheet() {
               </Select>
             </div>
 
-            <div className='space-y-2'>
-              <h3 className='font-semibold'>Media Type</h3>
+            <div className='space-y-3'>
+              <h3 className='text-sm font-medium text-white/50 uppercase tracking-tight'>Media Type</h3>
               <Select value={mediaType} onValueChange={handleMediaTypeChange}>
-                <SelectTrigger size='lg' className='w-full'>
+                <SelectTrigger size='lg' className='w-full h-12 bg-white/5 border-white/10 rounded-lg'>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='movie'>Movies</SelectItem>
-                  <SelectItem value='tv'>TV Shows</SelectItem>
+                <SelectContent className='bg-zinc-950 border-white/10 text-white'>
+                  <SelectItem value='movie' className='focus:bg-white/10 focus:text-white'>Movies</SelectItem>
+                  <SelectItem value='tv' className='focus:bg-white/10 focus:text-white'>TV Shows</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -234,10 +232,10 @@ export default function FilterSheet() {
 
           <Button
             onClick={clearAllFilters}
-            variant='default'
-            className='w-full text-black border border-b-gray-200 bg-transparent'
+            variant='ghost'
+            className='w-full h-12 text-white/60 hover:text-white bg-white/5 border border-white/10 mt-4 rounded-lg transition-all active:scale-95'
           >
-            <X className='size-4' />
+            <X className='size-4 mr-2' />
             Clear All Filters
           </Button>
         </div>

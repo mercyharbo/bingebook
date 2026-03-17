@@ -1,7 +1,23 @@
 import { DateRange } from 'react-day-picker'
 import { create } from 'zustand'
+import type { Movie } from '@/types/movie'
 
 interface DiscoverState {
+  movieList: Movie[] | null
+  setMoviesList: (movies: Movie[] | null) => void
+  currentPage: number
+  setCurrentPage: (page: number) => void
+  totalPages: number
+  setTotalPages: (pages: number) => void
+  selectedMovie: Movie | null
+  setSelectedMovie: (movie: Movie | null) => void
+  isModalOpen: boolean
+  setIsModalOpen: (open: boolean) => void
+  watchlistIds: number[]
+  setWatchlistIds: (ids: number[] | ((prev: number[]) => number[])) => void
+  currentSlide: number
+  setCurrentSlide: (slide: number | ((prev: number) => number)) => void
+
   selectedGenres: string[]
   dateRange: DateRange | undefined
   searchQuery: string
@@ -19,8 +35,30 @@ interface DiscoverState {
 }
 
 export const useDiscoverStore = create<DiscoverState>((set) => ({
+  movieList: null,
+  setMoviesList: (movies) => set({ movieList: movies }),
+  currentPage: 1,
+  setCurrentPage: (page) => set({ currentPage: page }),
+  totalPages: 1,
+  setTotalPages: (pages) => set({ totalPages: pages }),
+  selectedMovie: null,
+  setSelectedMovie: (movie) => set({ selectedMovie: movie }),
+  isModalOpen: false,
+  setIsModalOpen: (open) => set({ isModalOpen: open }),
+  watchlistIds: [],
+  setWatchlistIds: (ids) =>
+    set((state) => ({
+      watchlistIds: typeof ids === 'function' ? ids(state.watchlistIds) : ids,
+    })),
+  currentSlide: 0,
+  setCurrentSlide: (slide) =>
+    set((state) => ({
+      currentSlide:
+        typeof slide === 'function' ? slide(state.currentSlide) : slide,
+    })),
+
   selectedGenres: [],
-  dateRange: undefined,
+  dateRange: { from: undefined, to: undefined },
   searchQuery: '',
   sortBy: 'popularity.desc',
   mediaType: 'movie',
@@ -40,7 +78,7 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
   clearAllFilters: () =>
     set({
       selectedGenres: [],
-      dateRange: undefined,
+      dateRange: { from: undefined, to: undefined },
       searchQuery: '',
       sortBy: 'popularity.desc',
     }),

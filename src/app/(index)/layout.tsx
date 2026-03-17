@@ -1,5 +1,6 @@
-import FooterComp from '@/components/footer'
 import NavHeader from '@/components/NavHeader'
+import { AppSidebar } from '@/components/AppSidebar'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Metadata } from 'next'
 import type { ReactNode } from 'react'
 
@@ -50,10 +51,12 @@ export const metadata: Metadata = {
 
 export default function IndexLayout({ children }: { children: ReactNode }) {
   return (
-    <main>
-      <NavHeader />
-      {children}
-      <FooterComp />
-    </main>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="overflow-x-hidden">
+        <NavHeader />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

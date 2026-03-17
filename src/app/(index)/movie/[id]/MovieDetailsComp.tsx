@@ -1,11 +1,9 @@
 'use client'
 
 import {
-  Award,
   Calendar,
   ChevronLeft,
   Clock,
-  ExternalLink,
   Play,
   Plus,
   Star,
@@ -19,15 +17,9 @@ import useSWR from 'swr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import LoadingSpinner from '@/components/ui/loading-spinner'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
@@ -36,6 +28,11 @@ import { fetcher } from '@/lib/utils'
 import { WatchlistItem } from '@/types/watchlist'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
+import TrailerDialog from './TrailerDialog'
+import OverviewTab from './components/OverviewTab'
+import CastTab from './components/CastTab'
+import VideosTab from './components/VideosTab'
+import ReviewsTab from './components/ReviewsTab'
 
 interface MovieDetails {
   id: number
@@ -140,7 +137,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}?language=en-US`
       : null,
-    fetcher
+    fetcher,
   )
 
   // Fetch credits
@@ -148,7 +145,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/credits?language=en-US`
       : null,
-    fetcher
+    fetcher,
   )
 
   // Fetch videos
@@ -156,7 +153,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/videos?language=en-US`
       : null,
-    fetcher
+    fetcher,
   )
 
   // Fetch reviews
@@ -164,7 +161,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/reviews?language=en-US&page=1`
       : null,
-    fetcher
+    fetcher,
   )
 
   // Fetch similar movies
@@ -172,7 +169,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     movieId
       ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`
       : null,
-    fetcher
+    fetcher,
   )
 
   useEffect(() => {
@@ -195,7 +192,6 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
           .single()
 
         if (error && error.code !== 'PGRST116') {
-          // PGRST116 means no rows found
           console.error('Error fetching watchlist:', error)
           toast.error('Failed to load watchlist')
         } else {
@@ -214,13 +210,9 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   const cast: Cast[] = credits?.cast?.slice(0, 10) || []
   const crew: Crew[] = credits?.crew || []
   const director = crew.find((person) => person.job === 'Director')
-  const writers = crew.filter(
-    (person) => person.job === 'Writer' || person.job === 'Screenplay'
-  )
   const trailers: Video[] =
     videos?.results?.filter((video: Video) => video.type === 'Trailer') || []
   const movieReviews: Review[] = reviews?.results || []
-  const similarMovies: SimilarMovie[] = similar?.results?.slice(0, 8) || []
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -237,20 +229,6 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     return `${hours}h ${mins}m`
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 7) return 'text-green-500'
-    if (score >= 5) return 'text-yellow-500'
-    return 'text-red-500'
-  }
-
-  /**
-   * The function `addToWatchlist` adds a movie to a user's watchlist in a React application using
-   * TypeScript and Supabase.
-   * @returns The `addToWatchlist` function is an asynchronous function that adds a movie to a user's
-   * watchlist. It first checks if the user is logged in, then sets a flag `addingToWatchlist` to true.
-   * It then retrieves the user ID from the session data, creates an object `tmdbData` from the `movie`
-   * object, and inserts a new record into the 'watch
-   */
   const addToWatchlist = async () => {
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession()
@@ -287,14 +265,6 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     }
   }
 
-  /**
-   * The function `removeFromWatchlist` asynchronously removes an item from a watchlist in a TypeScript
-   * React application using Supabase, handling errors and displaying toast messages accordingly.
-   * @returns The `removeFromWatchlist` function is an asynchronous function that attempts to delete an
-   * item from the 'watchlist' table in a Supabase database. If the `watchlistItem` is not defined, the
-   * function will return early. Otherwise, it will attempt to delete the item with the specified `id`
-   * from the 'watchlist' table.
-   */
   const removeFromWatchlist = async () => {
     if (!watchlistItem) return
     setIsRemovingFromWatchlist(true)
@@ -320,20 +290,20 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
 
   if (movieLoading) {
     return (
-      <div className='min-h-screen'>
-        <div className='relative h-[70vh] bg-gradient-to-b from-black/50 to-black'>
-          <Skeleton className='w-full h-full' />
+      <div className='min-h-screen bg-gradient-premium'>
+        <div className='relative h-[70vh]'>
+          <Skeleton className='w-full h-full opacity-20' />
         </div>
-        <div className='container mx-auto px-4 py-6 sm:px-6'>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-            <div className='md:col-span-2 space-y-4'>
-              <Skeleton className='h-6 w-3/4' />
-              <Skeleton className='h-4 w-full' />
-              <Skeleton className='h-4 w-full' />
-              <Skeleton className='h-4 w-2/3' />
+        <div className='container mx-auto px-6 py-12'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-12'>
+            <div className='md:col-span-2 space-y-6'>
+              <Skeleton className='h-12 w-3/4 opacity-20' />
+              <Skeleton className='h-6 w-full opacity-20' />
+              <Skeleton className='h-6 w-full opacity-20' />
+              <Skeleton className='h-6 w-2/3 opacity-20' />
             </div>
-            <div className='space-y-4'>
-              <Skeleton className='h-60 w-full' />
+            <div className='space-y-6'>
+              <Skeleton className='h-[400px] w-full rounded-lg opacity-20' />
             </div>
           </div>
         </div>
@@ -343,17 +313,18 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
 
   if (movieError || !movie) {
     return (
-      <div className='min-h-screen flex items-center justify-center px-4'>
-        <div className='text-center'>
-          <h1 className='text-xl sm:text-2xl font-bold mb-4'>
-            Movie Not Found
-          </h1>
-          <p className='text-muted-foreground mb-4 text-sm sm:text-base'>
+      <div className='min-h-screen flex items-center justify-center px-4 bg-gradient-premium'>
+        <div className='text-center space-y-6 glass-dark p-12 rounded-lg border border-white/5'>
+          <h1 className='text-3xl font-bold text-glow'>Movie Not Found</h1>
+          <p className='text-muted-foreground'>
             The movie you&apos;re looking for doesn&apos;t exist or has been
             removed.
           </p>
-          <Button onClick={() => router.back()}>
-            <ChevronLeft className='h-4 w-4' />
+          <Button
+            onClick={() => router.back()}
+            className='rounded-xl px-8 h-12'
+          >
+            <ChevronLeft className='h-4 w-4 mr-2' />
             Go Back
           </Button>
         </div>
@@ -362,37 +333,26 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   }
 
   return (
-    <div className='min-h-screen -mt-16'>
+    <div className='min-h-screen bg-gradient-premium overflow-x-hidden'>
       {/* Hero Section */}
-      <div className='relative h-[100dvh] overflow-hidden'>
+      <div className='relative h-[85vh] lg:h-[90vh] overflow-hidden'>
         {movie.backdrop_path && (
           <Image
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
             alt={movie.title}
             fill
-            className='object-cover'
-            style={{ width: '100%', height: '100%' }}
+            className='object-cover opacity-60'
             priority
             sizes='100vw'
           />
         )}
-        <div className='absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent' />
+        <div className='absolute inset-0 bg-gradient-to-t from-[#02010a] via-[#02010a]/40 to-transparent' />
 
-        {/* <div className='absolute top-4 left-4 sm:left-6 hidden sm:block'>
-          <Button
-            variant='secondary'
-            onClick={() => router.back()}
-            className='cursor-pointer'
-          >
-            <ChevronLeft className='h-4 w-4' />
-            Back
-          </Button>
-        </div> */}
-
-        <div className='absolute bottom-10 lg:bottom-15 left-0 right-0 p-0 '>
-          <div className='w-[90%] lg:w-[80%] mx-auto'>
-            <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 items-start'>
-              <div className='flex-shrink-0 w-[150px] lg:w-[200px]'>
+        <div className='absolute bottom-0 left-0 right-0 py-20'>
+          <div className='container mx-auto px-6 lg:px-12'>
+            <div className='flex flex-col lg:flex-row gap-10 items-end'>
+              <div className='flex-shrink-0 w-[200px] lg:w-[280px] group relative'>
+                <div className='absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200'></div>
                 <Image
                   src={
                     movie.poster_path
@@ -400,170 +360,112 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
                       : '/sample-poster.jpg'
                   }
                   alt={movie.title}
-                  width={180}
-                  height={270}
-                  className='rounded-lg shadow-2xl w-full'
-                  style={{ width: '100%', height: 'auto' }}
-                  sizes='(max-width: 640px) 150px, 180px'
+                  width={280}
+                  height={420}
+                  className='relative rounded-lg shadow-2xl w-full border border-white/10'
+                  sizes='(max-width: 640px) 200px, 280px'
                 />
               </div>
 
-              <div className='flex-1 text-white space-y-3'>
-                <div className='space-y-2'>
-                  <h1 className='text-2xl sm:text-3xl md:text-4xl font-bold'>
+              <div className='flex-1 space-y-6'>
+                <div className='space-y-4'>
+                  <div className='flex flex-wrap gap-2'>
+                    {movie.genres.map((genre) => (
+                      <Badge
+                        key={genre.id}
+                        className='bg-primary/20 hover:bg-primary/30 text-primary-foreground border-none rounded-full px-4 py-1 text-xs font-medium backdrop-blur-md'
+                      >
+                        {genre.name}
+                      </Badge>
+                    ))}
+                    {movie.status === 'Released' && (
+                      <Badge className='bg-green-500/20 text-green-400 border-none rounded-full px-4 py-1 text-xs font-medium backdrop-blur-md'>
+                        Released
+                      </Badge>
+                    )}
+                  </div>
+                  <h1 className='text-3xl lg:text-5xl font-black text-white text-glow'>
                     {movie.title}
                   </h1>
                   {movie.tagline && (
-                    <p className='text-base sm:text-lg text-gray-300 italic'>
-                      {movie.tagline}
+                    <p className=' text-gray-300 font-medium italic max-w-2xl'>
+                      "{movie.tagline}"
                     </p>
                   )}
                 </div>
 
-                <div className='flex flex-wrap gap-3 items-center'>
-                  <div className='flex items-center gap-2'>
-                    <Star className='h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400' />
-                    <span
-                      className={`text-base sm:text-lg font-semibold ${getScoreColor(
-                        movie.vote_average
-                      )}`}
-                    >
+                <div className='flex flex-wrap gap-6 items-center text-white/80 font-medium'>
+                  <div className='flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-md backdrop-blur-md border border-white/10'>
+                    <Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
+                    <span className=''>
                       {movie.vote_average.toFixed(1)}
                     </span>
-                    <span className='text-gray-300 text-sm sm:text-base'>
-                      ({movie.vote_count.toLocaleString()} votes)
+                    <span className='text-white/40 text-sm'>
+                      ({movie.vote_count.toLocaleString()})
                     </span>
                   </div>
 
                   {movie.runtime > 0 && (
                     <div className='flex items-center gap-2'>
-                      <Clock className='h-4 w-4' />
-                      <span className='text-sm sm:text-base'>
+                      <Clock className='h-5 w-5 text-primary' />
+                      <span className=''>
                         {formatRuntime(movie.runtime)}
                       </span>
                     </div>
                   )}
 
                   <div className='flex items-center gap-2'>
-                    <Calendar className='h-4 w-4' />
-                    <span className='text-sm sm:text-base'>
-                      {new Date(movie.release_date).toLocaleDateString(
-                        'en-US',
-                        {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        }
-                      )}
+                    <Calendar className='h-5 w-5 text-primary' />
+                    <span className=''>
+                      {new Date(movie.release_date).getFullYear()}
                     </span>
                   </div>
                 </div>
 
-                <div className='flex flex-wrap gap-2'>
-                  {movie.genres.map((genre) => (
-                    <Badge
-                      key={genre.id}
-                      variant='secondary'
-                      className='rounded-3xl px-4'
-                    >
-                      {genre.name}
-                    </Badge>
-                  ))}
-                </div>
-
-                {/* {watchlistItem && (
-                  <MarkMovieSeenButton
-                    watchlistId={watchlistItem.id}
-                    isSeen={watchlistItem.is_seen}
-                    title={movie.title}
-                  />
-                )} */}
-
-                <div className='flex flex-wrap gap-2'>
+                <div className='flex flex-wrap gap-4 pt-4'>
                   {trailers.length > 0 && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size='lg'
-                          className='bg-blue-600 hover:bg-blue-700 min-w-[140px]'
-                        >
-                          <Play className='h-4 w-4 mr-2' />
-                          Watch Trailer
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className='max-w-[90vw] sm:max-w-[800px] overflow-y-auto lg:overflow-hidden'>
-                        <DialogHeader>
-                          <DialogTitle>Trailer</DialogTitle>
-                        </DialogHeader>
-                        <div className='aspect-video'>
-                          <iframe
-                            src={`https://www.youtube.com/embed/${trailers[0].key}`}
-                            title={trailers[0].name}
-                            className='w-full h-full rounded-lg'
-                            allowFullScreen
-                          />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <TrailerDialog
+                      trailerKey={trailers[0].key}
+                      trailerName={trailers[0].name}
+                    />
                   )}
 
                   {!watchlistItem && !isLoadingWatchlist && (
                     <Button
+                      size='lg'
                       variant='outline'
                       onClick={addToWatchlist}
                       disabled={addingToWatchlist}
-                      className='h-10'
+                      className='h-12 px-8 border-white/20 bg-white/5 backdrop-blur-xl hover:bg-white/10 text-white transition-all hover:scale-105 active:scale-95'
                     >
                       {addingToWatchlist ? (
-                        <div className='flex items-center gap-2'>
-                          <LoadingSpinner size={20} className='text-white' />
-                          <span>Adding...</span>
-                        </div>
+                        <LoadingSpinner size={24} color='white' />
                       ) : (
                         <>
-                          <Plus className='h-4 w-4' />
-                          Add to List
+                          <Plus className='h-6 w-6 mr-2' />
+                          Add to Watchlist
                         </>
                       )}
                     </Button>
                   )}
 
                   {watchlistItem && !isLoadingWatchlist && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className='bg-blue-600 hover:bg-blue-700 h-10'>
-                          <Trash2 className='h-4 w-4' /> Remove from Watchlist
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className='overflow-y-auto lg:overflow-hidden'>
-                        <DialogHeader>
-                          <DialogTitle>Remove from Watchlist</DialogTitle>
-                          <DialogDescription>
-                            Are you sure you want to remove {movie.title} from
-                            your watchlist?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className='flex gap-2 justify-end'>
-                          <Button variant='outline' onClick={() => {}}>
-                            Cancel
-                          </Button>
-                          <Button
-                            className='bg-blue-600 hover:bg-blue-700'
-                            disabled={isRemovingFromWatchlist}
-                            onClick={removeFromWatchlist}
-                          >
-                            {isRemovingFromWatchlist ? (
-                              <div className='flex items-center gap-2'>
-                                <LoadingSpinner size={20} />
-                                <span>Removing...</span>
-                              </div>
-                            ) : (
-                              'Remove'
-                            )}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button
+                      size='lg'
+                      variant='destructive'
+                      onClick={removeFromWatchlist}
+                      disabled={isRemovingFromWatchlist}
+                      className='h-12 px-8 shadow-destructive/20 transition-all hover:scale-105 active:scale-95'
+                    >
+                      {isRemovingFromWatchlist ? (
+                        <LoadingSpinner size={24} color='white' />
+                      ) : (
+                        <>
+                          <Trash2 className='h-6 w-6 mr-2' />
+                          Remove from Library
+                        </>
+                      )}
+                    </Button>
                   )}
                 </div>
               </div>
@@ -572,404 +474,64 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className='container mx-auto px-4 sm:px-6 py-6 sm:py-8'>
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          {/* Main Content */}
-          <div className='md:col-span-2'>
-            <Tabs defaultValue='overview' className='w-full'>
-              <TabsList className='grid grid-cols-4 w-full h-12 overflow-x-auto snap-x snap-mandatory scrollbar-hide'>
-                <TabsTrigger value='overview' className='snap-start '>
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger value='cast' className='snap-start '>
-                  Cast & Crew
-                </TabsTrigger>
-                <TabsTrigger value='videos' className='snap-start'>
-                  Videos
-                </TabsTrigger>
-                <TabsTrigger value='reviews' className='snap-start '>
-                  Reviews
-                </TabsTrigger>
-              </TabsList>
+      {/* Main Content Sections */}
+      <div className='container mx-auto px-6 lg:px-12 py-12'>
+        <Tabs defaultValue='overview' className='w-full space-y-12'>
+          <TabsList className='bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-lg h-14 w-full lg:w-max mx-auto lg:mx-0'>
+            <TabsTrigger
+              value='overview'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value='cast'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+            >
+              Cast
+            </TabsTrigger>
+            <TabsTrigger
+              value='videos'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+            >
+              Videos
+            </TabsTrigger>
+            <TabsTrigger
+              value='reviews'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+            >
+              Reviews
+            </TabsTrigger>
+          </TabsList>
 
-              <TabsContent
-                value='overview'
-                className='space-y-6 bg-white p-5 rounded-lg'
-              >
-                <div>
-                  <h2 className='text-xl sm:text-2xl font-bold mb-4'>
-                    Overview
-                  </h2>
-                  <p className='text-muted-foreground leading-relaxed text-sm sm:text-base'>
-                    {movie.overview || 'No overview available.'}
-                  </p>
-                </div>
+          <TabsContent
+            value='overview'
+            className='mt-0 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4'
+          >
+            <OverviewTab movie={movie} director={director} />
+          </TabsContent>
 
-                {director && (
-                  <div>
-                    <h3 className='text-base sm:text-lg font-semibold mb-2'>
-                      Director
-                    </h3>
-                    <Link href={`/person/${director.id}`}>
-                      <div className='flex items-center gap-3'>
-                        <Image
-                          src={
-                            director.profile_path
-                              ? `https://image.tmdb.org/t/p/w185${director.profile_path}`
-                              : '/avatar.jpg'
-                          }
-                          alt={director.name}
-                          width={60}
-                          height={60}
-                          className='rounded-full object-top object-cover'
-                          sizes='(max-width: 640px) 48px, 64px'
-                        />
-                        <span className='font-medium text-sm sm:text-base'>
-                          {director.name}
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
-                )}
+          <TabsContent
+            value='cast'
+            className='mt-0 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4'
+          >
+            <CastTab cast={cast} />
+          </TabsContent>
 
-                {writers.length > 0 && (
-                  <div className='space-y-3'>
-                    <h3 className='text-base sm:text-lg font-semibold'>
-                      Writers
-                    </h3>
-                    <div className='flex flex-wrap gap-2'>
-                      {writers.map((writer) => (
-                        <Link key={writer.id} href={`/person/${writer.id}`}>
-                          <Badge variant='outline'>{writer.name}</Badge>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
+          <TabsContent
+            value='videos'
+            className='mt-0 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4'
+          >
+            <VideosTab trailers={trailers} />
+          </TabsContent>
 
-              <TabsContent
-                value='cast'
-                className='space-y-6 bg-white p-5 rounded-lg'
-              >
-                <div className='space-y-4'>
-                  <h2 className='text-xl sm:text-2xl font-bold'>Cast</h2>
-                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 3xl:grid-cols-5 gap-4'>
-                    {cast.map((actor) => (
-                      <Link key={actor.id} href={`/person/${actor.id}`}>
-                        <Card
-                          key={actor.id}
-                          className='text-center p-0 rounded-2xl overflow-hidden group'
-                        >
-                          <CardContent className='p-0 relative'>
-                            <Image
-                              src={
-                                actor.profile_path
-                                  ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                                  : '/avatar.jpg'
-                              }
-                              alt={actor.name}
-                              width={185}
-                              height={350}
-                              quality={100}
-                              className='object-cover w-full'
-                              style={{ width: '100%', height: 'auto' }}
-                              sizes='(max-width: 640px) 50vw, 33vw'
-                            />
-                            <div className='absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none'></div>
-                            <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3'>
-                              <h4 className='font-semibold text-xs sm:text-sm text-white'>
-                                {actor.name}
-                              </h4>
-                              <p className='text-xs text-gray-200'>
-                                {actor.character}
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent
-                value='videos'
-                className='space-y-6 bg-white p-5 rounded-lg'
-              >
-                <div className='space-y-4'>
-                  <h2 className='text-xl sm:text-2xl font-bold'>
-                    Videos & Trailers
-                  </h2>
-                  {trailers.length > 0 ? (
-                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                      {trailers.map((video) => (
-                        <Card
-                          key={video.id}
-                          className='cursor-pointer hover:shadow-lg transition-shadow p-0'
-                        >
-                          <CardContent className='p-1 space-y-2'>
-                            <div className='aspect-video bg-gray-100 rounded-lg relative overflow-hidden'>
-                              <iframe
-                                src={`https://www.youtube.com/embed/${video.key}`}
-                                title={video.name}
-                                className='w-full h-full rounded-lg'
-                                allowFullScreen
-                              />
-                            </div>
-                            <div className='space-y-1 p-2'>
-                              <h4 className='font-semibold text-sm sm:text-base'>
-                                {video.name}
-                              </h4>
-                              <p className='text-xs sm:text-sm text-muted-foreground'>
-                                {video.type}
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className='text-muted-foreground text-sm sm:text-base'>
-                      No videos available.
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent
-                value='reviews'
-                className='space-y-6 bg-white p-5 rounded-lg'
-              >
-                <div className='space-y-4'>
-                  <h2 className='text-xl sm:text-2xl font-bold mb-4'>
-                    Reviews
-                  </h2>
-                  {movieReviews.length > 0 ? (
-                    <div className='space-y-4'>
-                      {movieReviews.slice(0, 3).map((review) => (
-                        <Card key={review.id} className='p-4'>
-                          <CardContent className='p-0'>
-                            <div className='flex items-start gap-4'>
-                              <Image
-                                src={
-                                  review.author_details.avatar_path
-                                    ? `https://image.tmdb.org/t/p/w185${review.author_details.avatar_path}`
-                                    : '/avatar.jpg'
-                                }
-                                alt={review.author}
-                                width={40}
-                                height={40}
-                                className='rounded-full object-cover'
-                                style={{ width: 'auto', height: 'auto' }}
-                                sizes='40px'
-                              />
-                              <div className='flex-1'>
-                                <div className='flex items-center gap-2 mb-2'>
-                                  <h4 className='font-semibold text-sm sm:text-base'>
-                                    {review.author}
-                                  </h4>
-                                  {review.author_details.rating && (
-                                    <Badge variant='secondary'>
-                                      <Star className='h-3 w-3 mr-1' />
-                                      {review.author_details.rating}/10
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className='text-xs sm:text-sm text-muted-foreground line-clamp-4'>
-                                  {review.content}
-                                </p>
-                                <p className='text-xs text-muted-foreground mt-2'>
-                                  {new Date(
-                                    review.created_at
-                                  ).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className='text-muted-foreground text-sm sm:text-base'>
-                      No reviews available.
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className='space-y-6'>
-            {/* Movie Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className='flex items-center gap-2 text-base sm:text-lg'>
-                  <Award className='h-5 w-5' />
-                  Movie Stats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    Status
-                  </span>
-                  <Badge
-                    variant={
-                      movie.status === 'Released' ? 'default' : 'secondary'
-                    }
-                    className='rounded-3xl px-4'
-                  >
-                    {movie.status}
-                  </Badge>
-                </div>
-
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    Original Language
-                  </span>
-                  <span className='font-medium text-sm sm:text-base'>
-                    {movie.original_language.toUpperCase()}
-                  </span>
-                </div>
-
-                {movie.budget > 0 && (
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground text-sm sm:text-base'>
-                      Budget
-                    </span>
-                    <span className='font-medium text-sm sm:text-base'>
-                      {formatCurrency(movie.budget)}
-                    </span>
-                  </div>
-                )}
-
-                {movie.revenue > 0 && (
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground text-sm sm:text-base'>
-                      Revenue
-                    </span>
-                    <span className='font-medium text-sm sm:text-base'>
-                      {formatCurrency(movie.revenue)}
-                    </span>
-                  </div>
-                )}
-
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground text-sm sm:text-base'>
-                    Popularity
-                  </span>
-                  <span className='font-medium text-sm sm:text-base'>
-                    {movie.popularity.toFixed(0)}
-                  </span>
-                </div>
-
-                {movie.homepage && (
-                  <div className='pt-2'>
-                    <Button
-                      variant='outline'
-                      className='w-full bg-transparent'
-                      asChild
-                    >
-                      <Link
-                        href={movie.homepage}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        <ExternalLink className='h-4 w-4 mr-2' />
-                        Official Website
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Production Companies */}
-            {movie.production_companies.length > 0 && (
-              <Card className='p-4'>
-                <CardHeader className='justify-start items-start p-0'>
-                  <CardTitle className='text-base sm:text-lg'>
-                    Production Companies
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className='p-0'>
-                  <div className='space-y-3'>
-                    {movie.production_companies.slice(0, 3).map((company) => (
-                      <div key={company.id} className='flex items-center gap-3'>
-                        {company.logo_path && (
-                          <Image
-                            src={`https://image.tmdb.org/t/p/w185${company.logo_path}`}
-                            alt={company.name}
-                            width={40}
-                            height={40}
-                            className='object-contain'
-                            style={{ width: 'auto', height: 'auto' }}
-                            sizes='40px'
-                          />
-                        )}
-                        <span className='text-sm font-medium'>
-                          {company.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Similar Movies */}
-            {similarMovies.length > 0 && (
-              <Card className='p-4'>
-                <CardHeader>
-                  <CardTitle className='text-base sm:text-lg'>
-                    Similar Movies
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className='p-0'>
-                  <div className='flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-3'>
-                    {similarMovies.slice(0, 4).map((similarMovie) => (
-                      <Link
-                        key={similarMovie.id}
-                        href={`/movie/${similarMovie.id}`}
-                        className='group cursor-pointer snap-start flex-shrink-0 w-[140px] sm:w-[160px]'
-                      >
-                        <div className='space-y-2'>
-                          <Image
-                            src={
-                              similarMovie.poster_path
-                                ? `https://image.tmdb.org/t/p/w300${similarMovie.poster_path}`
-                                : '/sample-poster.jpg'
-                            }
-                            alt={similarMovie.title}
-                            width={160}
-                            height={240}
-                            className='rounded-xl object-cover w-full group-hover:scale-105 transition-transform'
-                            style={{ width: '100%', height: 'auto' }}
-                            sizes='(max-width: 640px) 140px, 160px'
-                          />
-                          <div>
-                            <h4 className='text-xs sm:text-sm font-medium line-clamp-2'>
-                              {similarMovie.title}
-                            </h4>
-                            <div className='flex items-center gap-1 mt-1'>
-                              <Star className='h-3 w-3 fill-yellow-400 text-yellow-400' />
-                              <span className='text-xs'>
-                                {similarMovie.vote_average.toFixed(1)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+          <TabsContent
+            value='reviews'
+            className='mt-0 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4'
+          >
+            <ReviewsTab movieReviews={movieReviews} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -97,7 +97,7 @@ export default function SearchResultsContent() {
               <Search className='w-16 h-16 text-blue-600 dark:text-blue-400' />
             </div>
           </div>
-          <h1 className='text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white'>
+          <h1 className='text-3xl sm:text-4xl font-medium sm:font-bold text-slate-900 dark:text-white'>
             Find Something to Watch
           </h1>
           <p className='text-slate-600 dark:text-slate-400 text-lg max-w-md mx-auto'>
@@ -121,7 +121,7 @@ export default function SearchResultsContent() {
     return (
       <div className='min-h-screen flex items-center justify-center px-4'>
         <div className='text-center'>
-          <h2 className='text-2xl font-bold text-red-600 mb-2'>Oops!</h2>
+          <h2 className='text-2xl font-medium text-red-600 mb-2'>Oops!</h2>
           <p className='text-slate-600'>
             Something went wrong. Please try again later.
           </p>
@@ -137,7 +137,7 @@ export default function SearchResultsContent() {
           <div className='w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto'>
             <Search className='w-12 h-12 text-slate-400' />
           </div>
-          <h2 className='text-xl font-semibold'>No results found</h2>
+          <h2 className='text-xl font-medium'>No results found</h2>
           <p className='text-slate-600 dark:text-slate-400'>
             Try adjusting your search or try a different term
           </p>
@@ -150,42 +150,45 @@ export default function SearchResultsContent() {
     <div className='min-h-screen py-8 px-4 sm:px-6'>
       <div className='max-w-7xl mx-auto space-y-8'>
         <div className='flex items-center justify-between'>
-          <h1 className='text-2xl sm:text-3xl font-bold'>
+          <h1 className='text-2xl sm:text-3xl font-medium'>
             Search Results for &quot;{query}&quot;
           </h1>
         </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
+        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
           {data.results.map((item: SearchResult) => (
             <div
               key={item.id}
               onClick={() => handleItemClick(item)}
-              className='bg-white dark:bg-slate-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden cursor-pointer group'
+              className='group relative flex flex-col bg-white/5 backdrop-blur-sm border border-white/10 rounded-md overflow-hidden cursor-pointer hover:bg-white/10 transition-all duration-500 hover:scale-[1.02]'
             >
-              <div className='relative aspect-[2/3]'>
+              <div className='relative aspect-[2/3] overflow-hidden rounded-t-md'>
                 <Image
                   src={getImagePath(item)}
                   alt={getDisplayTitle(item) || 'Media poster'}
-                  className='object-cover'
+                  className='object-cover transition-transform duration-700 group-hover:scale-110'
                   fill
                   sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
                 />
-                <div className='absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300' />
+                <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
               </div>
 
-              <div className='p-4 space-y-2'>
-                <h2 className='font-semibold text-lg line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200'>
+              <div className='px-4 py-3 space-y-1'>
+                <h2 className='font-medium text-white text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors'>
                   {getDisplayTitle(item)}
                 </h2>
 
-                <div className='flex items-center text-sm text-slate-600 dark:text-slate-400 gap-2'>
-                  {getMediaType(item) === 'movie' && (
-                    <Film className='w-4 h-4' />
-                  )}
-                  {getMediaType(item) === 'tv' && <Tv className='w-4 h-4' />}
-                  {getMediaType(item) === 'person' && (
-                    <User className='w-4 h-4' />
-                  )}
+                <div className='flex items-center justify-between text-[11px] font-medium text-white/40'>
+                  <div className='flex items-center gap-1.5'>
+                    {getMediaType(item) === 'movie' && (
+                      <Film className='size-3' />
+                    )}
+                    {getMediaType(item) === 'tv' && <Tv className='size-3' />}
+                    {getMediaType(item) === 'person' && (
+                      <User className='size-3' />
+                    )}
+                    <span className="uppercase">{getMediaType(item)}</span>
+                  </div>
                   <span>{getSubtitle(item)}</span>
                 </div>
               </div>
@@ -194,39 +197,38 @@ export default function SearchResultsContent() {
         </div>
 
         {data.total_pages > 1 && (
-          <Pagination className='justify-center'>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              {[...Array(Math.min(5, data.total_pages))].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => setPage(i + 1)}
-                    isActive={page === i + 1}
-                  >
-                    {i + 1}
-                  </PaginationLink>
+          <div className="flex justify-center pt-8">
+            <Pagination className='justify-center'>
+              <PaginationContent className="bg-white/5 border border-white/10 rounded-lg p-1 gap-1">
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className={`rounded-lg transition-all ${page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-white/10'}`}
+                  />
                 </PaginationItem>
-              ))}
-              {data.total_pages > 5 && <PaginationEllipsis />}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setPage((p) => Math.min(data.total_pages, p + 1))
-                  }
-                  className={
-                    page === data.total_pages
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                {[...Array(Math.min(5, data.total_pages))].map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => setPage(i + 1)}
+                      isActive={page === i + 1}
+                      className={`rounded-lg transition-all cursor-pointer ${page === i + 1 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary' : 'hover:bg-white/10'}`}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                {data.total_pages > 5 && <PaginationEllipsis />}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setPage((p) => Math.min(data.total_pages, p + 1))
+                    }
+                    className={`rounded-lg transition-all ${page === data.total_pages ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-white/10'}`}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         )}
       </div>
     </div>

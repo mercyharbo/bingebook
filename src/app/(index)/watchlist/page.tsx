@@ -11,7 +11,11 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination' // Import shadcn Pagination components
+} from '@/components/ui/pagination'
+import EmptyState from '@/components/WatchlistEmptyState'
+import FilterSheet from '@/components/WatchlistFilterSheet'
+import WatchlistItemDialog from '@/components/WatchlistItemDialog'
+import WatchlistLoadingSkeleton from '@/components/WatchlistLoadingSkeleton'
 import { useWatchlistPageStore } from '@/lib/store/watchlistPageStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
@@ -19,10 +23,6 @@ import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import EmptyState from './empty-state'
-import FilterSheet from './FilterSheet'
-import WatchlistLoadingSkeleton from './loading-skeleton'
-import WatchlistItemDialog from './WatchlistItemDialog'
 
 import { TMDBSeason, WatchlistItem } from '@/types/watchlist'
 
@@ -57,7 +57,7 @@ export default function WatchlistPage() {
   const { isRemovingFromWatchlist, setIsRemovingFromWatchlist } =
     useWatchlistStore()
 
-  const itemsPerPage = 25 // Constant for items per page
+  const itemsPerPage = 25
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -102,9 +102,6 @@ export default function WatchlistPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
-  /* The above code is creating an array of filter objects for a watchlist. Each filter object represents
-a different category of items in the watchlist, such as 'All', 'Movies', 'TV Shows', 'Watching',
-'Watched', and 'Planned'. */
   const filters = [
     { id: 'all', label: 'All', count: watchlistItems.length },
     {
@@ -127,8 +124,8 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
           Object.keys(item.seen_episodes).length > 0 &&
           Object.values(item.seen_episodes).reduce(
             (sum: number, eps: string[]) => sum + eps.length,
-            0
-          ) < (item.tmdb_data.number_of_episodes || Infinity)
+            0,
+          ) < (item.tmdb_data.number_of_episodes || Infinity),
       ).length,
     },
     {
@@ -140,7 +137,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
           (item.media_type === 'tv' &&
             item.tmdb_data.number_of_seasons &&
             item.tmdb_data.number_of_seasons > 0 &&
-            item.completed_seasons.length === item.tmdb_data.number_of_seasons)
+            item.completed_seasons.length === item.tmdb_data.number_of_seasons),
       ).length,
     },
     {
@@ -149,7 +146,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
       count: watchlistItems.filter(
         (item) =>
           !item.is_seen &&
-          (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0)
+          (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0),
       ).length,
     },
   ]
@@ -166,7 +163,6 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         toast.success('Item removed from watchlist')
         setIsRemovingFromWatchlist(false)
 
-        // Adjust current page if necessary
         const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
         if (currentPage > totalPages && totalPages > 0) {
           setCurrentPage(totalPages)
@@ -188,7 +184,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
   const handleTVProgressUpdate = (
     watchlistId: number,
     seenEpisodes: Record<string, string[]>,
-    completedSeasons: number[]
+    completedSeasons: number[],
   ) => {
     const updates = {
       seen_episodes: seenEpisodes,
@@ -197,7 +193,6 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
     }
     updateWatchlistItem(watchlistId, updates)
 
-    // Also update selectedItem if it's the same item
     if (selectedItem && selectedItem.id === watchlistId) {
       setSelectedItem({ ...selectedItem, ...updates })
     }
@@ -207,7 +202,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
     async (
       watchlistId: number,
       numberOfSeasons: number,
-      seasons: TMDBSeason[]
+      seasons: TMDBSeason[],
     ) => {
       const item = watchlistItems.find((item) => item.id === watchlistId)
       if (item) {
@@ -217,7 +212,6 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
           seasons: seasons,
         }
 
-        // Update in database
         const { error } = await supabase
           .from('watchlist')
           .update({
@@ -229,12 +223,10 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         if (error) {
           console.error('Error updating TV metadata:', error)
         } else {
-          // Update local state only if database update succeeds
           updateWatchlistItem(watchlistId, {
             tmdb_data: updatedTmdbData,
           })
 
-          // Also update selectedItem if it's the same item
           if (selectedItem && selectedItem.id === watchlistId) {
             setSelectedItem({
               ...selectedItem,
@@ -250,7 +242,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
       selectedItem,
       updateWatchlistItem,
       setSelectedItem,
-    ]
+    ],
   )
 
   const addToWatchlist = async (item: WatchlistItem) => {
@@ -277,7 +269,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
         console.error('Error adding to watchlist:', error)
         toast.error('Failed to add to watchlist')
       } else {
-        addWatchlistItem({ ...item, id: Date.now() }) // Temporary ID
+        addWatchlistItem({ ...item, id: Date.now() })
         toast.success('Added to watchlist')
       }
     } catch (error) {
@@ -297,7 +289,7 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
           Object.keys(item.seen_episodes).length > 0 &&
           Object.values(item.seen_episodes).reduce(
             (sum: number, eps: string[]) => sum + eps.length,
-            0
+            0,
           ) < (item.tmdb_data.number_of_episodes || Infinity)
         )
       if (activeFilter === 'watched')
@@ -358,12 +350,11 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
       }
     })
 
-  // Pagination logic
   const totalItems = filteredItems.length
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   )
 
   if (isLoading) {
@@ -371,233 +362,245 @@ a different category of items in the watchlist, such as 'All', 'Movies', 'TV Sho
   }
 
   return (
-    <main className='min-h-screen dark:bg-background p-5 lg:p-10 space-y-5'>
-      <header className='relative flex flex-col md:flex-row justify-between items-center gap-8 py-5 lg:py-8'>
-        {/* Hero Section */}
-        <div className='text-center md:text-left space-y-2 px-4 max-w-lg'>
-          <h1 className='text-3xl font-bold text-gray-900 dark:text-white leading-tight'>
-            Your Watchlist
-          </h1>
-          <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed'>
-            Keep track of your movies and TV shows. Discover, organize, and
-            never miss your favorites.
-          </p>
-        </div>
+    <main className='flex flex-col min-h-screen bg-gradient-premium overflow-x-hidden'>
+      <div className='flex flex-col gap-8 px-6 py-12 lg:px-12'>
+        <header className='flex flex-col lg:flex-row lg:justify-between lg:items-center w-full gap-8'>
+          <div className='space-y-1'>
+            <h1 className='text-4xl font-bold text-glow'>Your Watchlist</h1>
+            <p className='text-muted-foreground font-medium max-w-lg'>
+              Keep track of your favorite movies and series in one beautiful
+              place.
+            </p>
+          </div>
 
-        {/* Controls Section */}
-        <div className='w-full md:w-auto space-y-6'>
-          {/* Search and Sort */}
-          <div className='flex flex-col lg:flex-row gap-4 w-full lg:max-w-xl mx-auto'>
-            <div className='relative flex-1'>
-              <Search className='absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400' />
+          <div className='flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto'>
+            <div className='relative w-full sm:w-[300px] group'>
+              <Search className='absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary' />
               <Input
-                placeholder='Search your watchlist...'
+                placeholder='Search your library...'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className='pl-12 h-11 text-base border border-gray-400 shadow-none '
+                className='pl-11 h-11 bg-white/5 border-white/10 focus:border-primary/50 transition-all font-medium'
               />
             </div>
-            <div className='flex gap-3 w-full lg:w-auto'>
+
+            <div className='flex items-center gap-3 w-full sm:w-auto'>
               <Button
                 onClick={() => setIsFilterOpen(true)}
-                variant='outline'
-                className='h-11 w-full lg:w-auto bg-transparent shadow-none border border-gray-400 '
+                variant='ghost'
+                className='h-11 flex-1 sm:flex-none bg-white/5 border border-white/10 hover:bg-white/10 transition-all gap-2'
               >
                 <Filter className='size-4' />
-                Filters
+                <span className='font-medium'>Filters</span>
+                {activeFilter !== 'all' && (
+                  <Badge className='ml-1 bg-primary text-primary-foreground size-5 p-0 flex items-center justify-center rounded-full text-[10px]'>
+                    1
+                  </Badge>
+                )}
               </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {filteredItems.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          <div className='grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:px-14 3xl:grid-cols-6'>
-            {paginatedItems.map((item) => (
-              <div
-                key={item.id}
-                className='snap-start shrink-0  group cursor-pointer'
-                onClick={() => {
-                  setSelectedItem(item)
-                  setIsDialogOpen(true)
-                }}
-              >
-                <div className='relative mb-3 overflow-hidden rounded-lg'>
-                  <Image
-                    src={
-                      item.poster_path
-                        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                        : '/sample-poster.jpg'
-                    }
-                    alt={
-                      item.media_type === 'movie'
-                        ? item.tmdb_data.title || 'Untitled Movie'
-                        : item.tmdb_data.name || 'Untitled Series'
-                    }
-                    width={500}
-                    height={750}
-                    className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300'
-                  />
-                  <Badge className='absolute top-2 left-2 bg-black/70 text-white text-xs'>
-                    {item.media_type === 'movie' ? 'Movie' : 'TV'}
-                  </Badge>
-                  {(() => {
-                    if (item.media_type === 'movie') {
-                      return item.is_seen ? (
-                        <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
-                          Watched
-                        </Badge>
-                      ) : null
-                    } else {
-                      // For TV shows, check if all seasons are completed
-                      const hasSeasons =
-                        item.tmdb_data.number_of_seasons &&
-                        item.tmdb_data.number_of_seasons > 0
-                      const allSeasonsCompleted =
-                        hasSeasons &&
-                        item.completed_seasons.length > 0 &&
-                        item.completed_seasons.length ===
-                          item.tmdb_data.number_of_seasons
-                      return allSeasonsCompleted ? (
-                        <Badge className='absolute top-2 right-2 bg-green-600 text-white text-xs'>
-                          Watched
-                        </Badge>
-                      ) : null
-                    }
-                  })()}
-                </div>
-                <div className='space-y-1'>
-                  <h3 className='font-semibold text-base line-clamp-1'>
-                    {item.media_type === 'movie'
-                      ? item.tmdb_data.title || 'Untitled Movie'
-                      : item.tmdb_data.name || 'Untitled Series'}
-                  </h3>
-                  <div className='flex justify-between text-xs text-muted-foreground'>
-                    <span>
-                      {new Date(
+        {filteredItems.length === 0 ? (
+          <div className='py-20'>
+            <EmptyState />
+          </div>
+        ) : (
+          <div className='space-y-12'>
+            <div className='flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none'>
+              {filters.map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant='ghost'
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`h-9 px-4 rounded-full text-sm font-medium transition-all ${
+                    activeFilter === filter.id
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                      : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
+                  }`}
+                >
+                  {filter.label}
+                  <span
+                    className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                      activeFilter === filter.id ? 'bg-white/20' : 'bg-white/10'
+                    }`}
+                  >
+                    {filter.count}
+                  </span>
+                </Button>
+              ))}
+            </div>
+
+            <section className='grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
+              {paginatedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className='group relative flex flex-col bg-white/5 backdrop-blur-sm border border-white/10 rounded-md overflow-hidden cursor-pointer hover:bg-white/10 transition-all duration-500 hover:scale-[1.02]'
+                  onClick={() => {
+                    setSelectedItem(item)
+                    setIsDialogOpen(true)
+                  }}
+                >
+                  <div className='relative aspect-[2/3] overflow-hidden rounded-t-md'>
+                    <Image
+                      src={
+                        item.poster_path
+                          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                          : '/sample-poster.jpg'
+                      }
+                      alt={
+                        (item.media_type === 'movie'
+                          ? item.tmdb_data.title
+                          : item.tmdb_data.name) || 'Media poster'
+                      }
+                      fill
+                      className='object-cover transition-transform duration-700 group-hover:scale-110'
+                    />
+                    <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
+
+                    {(() => {
+                      const isWatched =
                         item.media_type === 'movie'
-                          ? item.tmdb_data.release_date || ''
-                          : item.tmdb_data.first_air_date || ''
-                      ).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    <span className='line-clamp-1'>
-                      {(item.tmdb_data.genres || [])
-                        .slice(0, 2)
-                        .map((genre: { name: string }) => genre.name)
-                        .filter(Boolean)
-                        .join(', ') || 'N/A'}
-                    </span>
+                          ? item.is_seen
+                          : item.tmdb_data.number_of_seasons &&
+                            item.completed_seasons.length ===
+                              item.tmdb_data.number_of_seasons
+
+                      return (
+                        isWatched && (
+                          <div className='absolute top-2 right-2 glass-dark px-2 py-0.5 rounded text-[10px] font-bold text-green-400 border border-green-400/20'>
+                            WATCHED
+                          </div>
+                        )
+                      )
+                    })()}
+
+                    {item.tmdb_data.vote_average !== undefined &&
+                      item.tmdb_data.vote_average > 0 && (
+                        <div className='absolute top-2 left-2 glass-dark px-1.5 py-0.5 rounded flex items-center gap-1 border border-white/10'>
+                          <div className='size-1 rounded-full bg-yellow-400' />
+                          <span className='text-[10px] font-medium text-white'>
+                            {item.tmdb_data.vote_average.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+
+                    {item.media_type === 'tv' &&
+                      item.tmdb_data.number_of_episodes && (
+                        <div className='absolute bottom-0 left-0 right-0 h-1 bg-white/20'>
+                          <div
+                            className='h-full bg-primary'
+                            style={{
+                              width: `${(Object.values(item.seen_episodes).reduce((a: number, b: string[]) => a + b.length, 0) / item.tmdb_data.number_of_episodes) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                  </div>
+
+                  <div className='px-4 py-3 space-y-1'>
+                    <h3 className='font-medium text-white text-sm lg:text-base leading-tight truncate group-hover:text-primary transition-colors'>
+                      {item.media_type === 'movie'
+                        ? item.tmdb_data.title
+                        : item.tmdb_data.name}
+                    </h3>
+                    <div className='flex items-center justify-between text-[11px] font-medium text-white/40'>
+                      <span>
+                        {new Date(
+                          item.media_type === 'movie'
+                            ? item.tmdb_data.release_date || ''
+                            : item.tmdb_data.first_air_date || '',
+                        ).getFullYear() || 'N/A'}
+                      </span>
+                      <span className='uppercase'>{item.media_type}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </section>
 
-          <WatchlistItemDialog
-            selectedItem={selectedItem}
-            isDialogOpen={isDialogOpen}
-            setIsDialogOpen={setIsDialogOpen}
-            removeFromWatchlist={removeFromWatchlist}
-            addToWatchlist={addToWatchlist}
-            handleMovieSeenToggle={handleMovieSeenToggle}
-            handleTVProgressUpdate={handleTVProgressUpdate}
-            updateTVMetadata={updateTVMetadata}
-            isRemovingFromWatchlist={isRemovingFromWatchlist}
-            watchlistItems={watchlistItems}
-          />
+            {totalPages > 1 && (
+              <div className='flex justify-center pt-8'>
+                <Pagination>
+                  <PaginationContent className='bg-white/5 border border-white/10 rounded-2xl p-1 gap-1'>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setCurrentPage(Math.max(currentPage - 1, 1))
+                        }
+                        className={`rounded-xl transition-all ${currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-white/10'}`}
+                      />
+                    </PaginationItem>
 
-          {/* Pagination Component */}
-          {totalPages > 1 && (
-            <div className='mt-6'>
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() =>
-                        setCurrentPage(Math.max(currentPage - 1, 1))
+                    {[...Array(totalPages)].map((_, index) => {
+                      const page = index + 1
+                      const isVisible =
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+
+                      if (!isVisible) {
+                        if (page === 2 || page === totalPages - 1)
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )
+                        return null
                       }
-                      className={
-                        currentPage === 1
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                    />
-                  </PaginationItem>
-                  {[...Array(totalPages)].map((_, index) => {
-                    const page = index + 1
-                    // Show first 3 pages, last 3 pages, and 2 pages around current page
-                    const isFirstThree = page <= 3
-                    const isLastThree = page > totalPages - 3
-                    const isNearCurrent =
-                      page >= currentPage - 1 && page <= currentPage + 1
-                    const showEllipsisBefore = page === 4 && currentPage > 4
-                    const showEllipsisAfter =
-                      page === totalPages - 3 && currentPage < totalPages - 3
 
-                    if (isFirstThree || isLastThree || isNearCurrent) {
                       return (
                         <PaginationItem key={page}>
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className='cursor-pointer'
+                            className={`rounded-xl transition-all cursor-pointer ${currentPage === page ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary' : 'hover:bg-white/10'}`}
                           >
                             {page}
                           </PaginationLink>
                         </PaginationItem>
                       )
-                    }
-                    if (showEllipsisBefore) {
-                      return (
-                        <PaginationItem key='ellipsis-before'>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      )
-                    }
-                    if (showEllipsisAfter) {
-                      return (
-                        <PaginationItem key='ellipsis-after'>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      )
-                    }
-                    return null
-                  })}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() =>
-                        setCurrentPage(Math.min(currentPage + 1, totalPages))
-                      }
-                      className={
-                        currentPage === totalPages
-                          ? 'pointer-events-none opacity-50'
-                          : 'cursor-pointer'
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </>
-      )}
+                    })}
 
-      <FilterSheet
-        filters={filters}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        isOpen={isFilterOpen}
-        onOpenChange={setIsFilterOpen}
-      />
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setCurrentPage(Math.min(currentPage + 1, totalPages))
+                        }
+                        className={`rounded-xl transition-all ${currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-white/10'}`}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
+        )}
+
+        <WatchlistItemDialog
+          selectedItem={selectedItem}
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          removeFromWatchlist={removeFromWatchlist}
+          addToWatchlist={addToWatchlist}
+          handleMovieSeenToggle={handleMovieSeenToggle}
+          handleTVProgressUpdate={handleTVProgressUpdate}
+          updateTVMetadata={updateTVMetadata}
+          isRemovingFromWatchlist={isRemovingFromWatchlist}
+          watchlistItems={watchlistItems}
+        />
+
+        <FilterSheet
+          filters={filters}
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          isOpen={isFilterOpen}
+          onOpenChange={setIsFilterOpen}
+        />
+      </div>
     </main>
   )
 }

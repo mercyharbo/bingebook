@@ -15,17 +15,16 @@ import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { fetcher } from '@/lib/utils'
 import type { Movie } from '@/types/movie'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { Calendar, SlidersHorizontal } from 'lucide-react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'react-toastify'
 import useSWR from 'swr'
-import DiscoverLoadingSkeleton from './DiscoverLoadingSkeleton'
-import DiscoverMovieDialog from './DiscoverMovieDialog'
-import DiscoverPagination from './DiscoverPagination'
-import FilterSheet from './FilterSheet'
+import DiscoverLoadingSkeleton from '@/components/DiscoverLoadingSkeleton'
+import MovieCard from '@/components/MovieCard'
+import DiscoverPagination from '@/components/DiscoverPagination'
+import FilterSheet from '@/components/DiscoverFilterSheet'
 
 const movieGenres = [
   { id: 28, name: 'Action' },
@@ -70,16 +69,19 @@ const tvGenres = [
 export default function Discover() {
   const router = useRouter()
   const supabase = createClient()
-  const [movieList, setMoviesList] = useState<Movie[] | null>(null)
-  const [currentPage, setCurrentPage] = useState<number>(1)
-  const [totalPages, setTotalPages] = useState<number>(1)
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
-  const [watchlistIds, setWatchlistIds] = useState<number[]>([])
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
-
+  
   const {
+    movieList,
+    setMoviesList,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages,
+    setSelectedMovie,
+    watchlistIds,
+    setWatchlistIds,
+    currentSlide,
+    setCurrentSlide,
     selectedGenres,
     dateRange,
     searchQuery,
@@ -90,9 +92,7 @@ export default function Discover() {
     clearAllFilters,
   } = useDiscoverStore()
 
-  const genres = mediaType === 'movie' ? movieGenres : tvGenres
-
-  const genreMap = Object.fromEntries(genres.map((g) => [g.id, g.name]))
+  const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -105,7 +105,6 @@ export default function Discover() {
         .from('watchlist')
         .select('tmdb_id')
         .eq('user_id', userId)
-        .eq('media_type', 'movie')
 
       if (error) {
         console.error('Error fetching watchlist:', error)
@@ -117,7 +116,7 @@ export default function Discover() {
     }
 
     fetchWatchlist()
-  }, [supabase])
+  }, [supabase, setWatchlistIds])
 
   const sortOptions = [
     { value: 'popularity.desc', label: 'Most Popular' },
@@ -224,32 +223,17 @@ export default function Discover() {
     return false
   })
 
-  const handleMovieClick = (movie: Movie) => {
-    setSelectedMovie(movie)
-    setIsModalOpen(true)
-  }
-
-  const handleViewDetails = () => {
-    if (selectedMovie) {
-      const path =
-        mediaType === 'movie'
-          ? `/movie/${selectedMovie.id}`
-          : `/tv/${selectedMovie.id}`
-      router.push(path)
-    }
-  }
-
   const nextSlide = () => {
     if (!movieList) return
-    setCurrentSlide((prev) => (prev + 1) % Math.min(movieList.length, 5))
+    setCurrentSlide((prev) => (prev + 1) % Math.min(movieList.length, 10))
   }
 
   const prevSlide = () => {
     if (!movieList) return
     setCurrentSlide(
       (prev) =>
-        (prev - 1 + Math.min(movieList.length, 5)) %
-        Math.min(movieList.length, 5)
+        (prev - 1 + Math.min(movieList.length, 10)) %
+        Math.min(movieList.length, 10)
     )
   }
 
@@ -262,16 +246,16 @@ export default function Discover() {
     if (!movieList || movieList.length === 0) return
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.min(movieList.length, 5))
+      setCurrentSlide((prev) => (prev + 1) % Math.min(movieList.length, 10))
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [movieList])
+  }, [movieList, setCurrentSlide])
 
   if (isLoading) return <DiscoverLoadingSkeleton />
 
   return (
-    <main className='-mt-16 space-y-5'>
+    <main className="flex flex-col min-h-screen bg-gradient-premium overflow-x-hidden">
       {/* Hero Section */}
       {movieList && movieList.length > 0 && (
         <HeroSlider
@@ -286,39 +270,45 @@ export default function Discover() {
         />
       )}
 
-      <div className='flex flex-col gap-5 w-full lg:w-full 3xl:w-[90%] px-5 mx-auto pb-10 lg:px-16'>
+      <div className="flex flex-col gap-8 px-6 py-12 lg:px-12">
         {/* Header */}
-        <header className='flex flex-col lg:flex-row lg:justify-between lg:items-center w-full gap-5'>
-          <h1 className='text-2xl uppercase font-bold flex items-center gap-2'>
-            {mediaType === 'movie' ? 'Discover Movies' : 'Discover TV Shows'}
-          </h1>
+        <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center w-full gap-6">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-medium text-glow uppercase italic">
+              {mediaType === 'movie' ? 'Discover Movies' : 'Discover TV Shows'}
+            </h1>
+            <p className="text-muted-foreground font-medium">
+              Explore thousands of titles tailored for you.
+            </p>
+          </div>
 
-          <div className='flex gap-2 w-full lg:w-auto'>
+          <div className="flex gap-3 w-full lg:w-auto">
             <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
               <SelectTrigger
-                size='lg'
-                className='lg:w-[180px] py-2 border border-gray-400 '
+                size="lg"
+                className="h-11 lg:w-[200px] rounded-lg bg-white/5 border-white/10 hover:bg-white/10 transition-all font-medium"
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-black/80 backdrop-blur-2xl border-white/10 rounded-lg">
                 {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} className="rounded-lg">
                     {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            
             <Button
-              variant='outline'
+              variant="ghost"
               onClick={() => setIsFilterOpen(true)}
-              className='h-11'
+              className="h-11 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all gap-2"
             >
-              <SlidersHorizontal className='size-4' />
-              Filters
-              {(selectedGenres.length > 0 || dateRange) && (
-                <Badge variant='secondary' className='ml-2'>
-                  {selectedGenres.length + (dateRange ? 1 : 0)}
+              <SlidersHorizontal className="size-4" />
+              <span className="font-medium">Filters</span>
+              {(selectedGenres.length > 0 || dateRange?.from || dateRange?.to) && (
+                <Badge className="ml-1 bg-primary text-primary-foreground size-5 p-0 flex items-center justify-center rounded-full text-[10px]">
+                  {selectedGenres.length + (dateRange?.from ? 1 : 0) + (dateRange?.to ? 1 : 0)}
                 </Badge>
               )}
             </Button>
@@ -326,107 +316,43 @@ export default function Discover() {
         </header>
 
         {filteredMedia?.length === 0 && (
-          <div className='text-center py-12'>
-            <Calendar className='h-16 w-16 text-muted-foreground mx-auto mb-4' />
-            <h3 className='text-xl font-semibold mb-2'>
-              No {mediaType === 'movie' ? 'movies' : 'TV shows'} found
-            </h3>
-            <p className='text-muted-foreground mb-4'>
-              Try adjusting your filters or search terms
+          <div className="text-center py-24 glass rounded-lg border-dashed">
+            <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
+            <h3 className="text-2xl font-medium mb-2">No results found</h3>
+            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+              We couldn't find any {mediaType === 'movie' ? 'movies' : 'TV shows'} matching your criteria.
             </p>
-            <Button onClick={handleClearAllFilters}>Clear Filters</Button>
+            <Button onClick={handleClearAllFilters} className="rounded-lg h-11 px-6">Clear All Filters</Button>
           </div>
         )}
 
-        {/* Media Grid for discoveries */}
-        {filteredMedia && filteredMedia.length > 1 && (
-          <section
-            className={`grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6`}
-          >
+        {/* Media Grid */}
+        {filteredMedia && filteredMedia.length > 0 && (
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
             {filteredMedia.map((item: Movie) => (
-              <div
+              <MovieCard
                 key={item.id}
-                className='group cursor-pointer'
-                onClick={() => handleMovieClick(item)}
-              >
-                <div className='relative mb-3 overflow-hidden rounded-lg'>
-                  <Image
-                    src={
-                      item.poster_path
-                        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                        : '/sample-poster.jpg'
-                    }
-                    alt={
-                      (mediaType === 'movie' ? item.title : item.name) ||
-                      'Media item'
-                    }
-                    width={500}
-                    height={750}
-                    className={`object-cover w-full h-96 group-hover:scale-105 transition-transform duration-300 `}
-                  />
-                </div>
-
-                <div className='space-y-1'>
-                  <div>
-                    <h3 className='font-semibold text-base line-clamp-1'>
-                      {mediaType === 'movie' ? item.title : item.name}
-                    </h3>
-                  </div>
-
-                  <div className='flex justify-between text-xs text-muted-foreground'>
-                    <span>
-                      {(
-                        mediaType === 'movie'
-                          ? item.release_date
-                          : item.first_air_date
-                      )
-                        ? format(
-                            parseISO(
-                              mediaType === 'movie'
-                                ? item.release_date!
-                                : item.first_air_date!
-                            ),
-                            'MMM d, yyyy'
-                          )
-                        : 'N/A'}
-                    </span>
-                    <span className='line-clamp-1'>
-                      {item.genre_ids
-                        ? item.genre_ids
-                            .slice(0, 2)
-                            .map((id) => genreMap[id])
-                            .filter(Boolean)
-                            .join(', ')
-                        : 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                movie={item}
+                isInWatchlist={isInWatchlist(item.id)}
+                addToWatchlist={() => addToWatchlist(item)}
+                addingToWatchlist={addingToWatchlist}
+              />
             ))}
-          </section>
+          </div>
         )}
 
-        {/* pagination */}
+        {/* Pagination */}
         {filteredMedia && filteredMedia.length > 0 && totalPages > 1 && (
-          <DiscoverPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          <div className="pt-8 flex justify-center">
+            <DiscoverPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
         )}
 
         <FilterSheet />
-
-        <DiscoverMovieDialog
-          selectedMovie={selectedMovie}
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-          handleViewDetails={handleViewDetails}
-          addToWatchlist={addToWatchlist}
-          isInWatchlist={isInWatchlist}
-          addingToWatchlist={addingToWatchlist}
-          mediaType={mediaType}
-        />
       </div>
     </main>
   )

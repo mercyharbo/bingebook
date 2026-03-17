@@ -3,22 +3,21 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Movie } from '@/types/movie'
-import { format, parseISO } from 'date-fns'
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
   Info,
+  Flame,
   Plus,
-  Star,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { GENRE_MAP } from '@/lib/constants'
 
 interface HeroSliderProps {
   moviesList: Movie[] | null
   currentSlide: number
-  setCurrentSlide: (slide: number) => void
+  setCurrentSlide: (slide: number | ((prev: number) => number)) => void
   nextSlide: () => void
   prevSlide: () => void
   addToWatchlist: (movie: Movie) => void
@@ -36,169 +35,140 @@ export default function HeroSlider({
   isInWatchlist,
   addingToWatchlist,
 }: HeroSliderProps) {
-  const heroMovies = moviesList?.slice(0, 5) || []
+  const heroMovies = moviesList?.slice(0, 10) || []
 
   if (!moviesList || moviesList.length === 0) {
     return null
   }
 
   return (
-    <section className='relative h-[90vh] w-full overflow-hidden'>
-      <div className='relative w-full h-full'>
-        <section className='relative h-screen overflow-hidden'>
-          <div className='relative w-full h-full'>
+    <section className="relative w-full h-[600px] mt-4 px-6 lg:px-12 overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden rounded-lg group/slider">
+        <div
+          className="flex h-full gap-0 transition-transform duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform"
+          style={{ transform: `translate3d(calc(-100% * ${currentSlide}), 0, 0)` }}
+        >
+          {heroMovies.map((movie: Movie, index: number) => (
             <div
-              className='flex h-full transition-transform duration-700 ease-in-out'
-              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              key={movie.id}
+              className="flex-none w-full min-w-full h-full relative overflow-hidden"
             >
-              {heroMovies.map((movie: Movie, index: number) => (
-                <div
-                  key={movie.id}
-                  className='flex-shrink-0 w-full h-full relative'
-                >
-                  <Image
-                    src={
-                      movie.backdrop_path
-                        ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-                        : movie.poster_path
-                        ? `https://image.tmdb.org/t/p/original${movie.poster_path}`
-                        : '/sample-poster.jpg'
-                    }
-                    alt={movie.title || movie.name || 'Media backdrop'}
-                    fill
-                    className='object-cover'
-                    priority={index === 0}
-                  />
-                  <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
+              <Image
+                src={`https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path}`}
+                alt={movie.title || movie.name || 'Media backdrop'}
+                fill
+                className="object-cover scale-105 group-hover/slider:scale-100 transition-transform duration-[2s]"
+                priority={index === 0}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
 
-                  {/* Content */}
-                  <div className='absolute inset-0 flex items-center z-10'>
-                    <div className='w-[80%] mx-auto'>
-                      <div className='max-w-2xl space-y-6'>
-                        <div className='space-y-2'>
-                          <Badge className='bg-blue-600 hover:bg-blue-700 text-white rounded-3xl px-3 py-1'>
-                            Trending Now
-                          </Badge>
-                          <h1 className='text-4xl lg:text-6xl font-bold text-white leading-tight'>
-                            {movie.title || movie.name}
-                          </h1>
-                        </div>
-
-                        <div className='flex items-center gap-4 text-white/90'>
-                          <div className='flex items-center gap-1'>
-                            <Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
-                            <span className='font-semibold'>
-                              {movie.vote_average.toFixed(1)}
-                            </span>
-                          </div>
-                          <div className='flex items-center gap-1'>
-                            <Calendar className='h-4 w-4' />
-                            <span>
-                              {movie.release_date || movie.first_air_date
-                                ? format(
-                                    parseISO(
-                                      movie.release_date ||
-                                        movie.first_air_date ||
-                                        ''
-                                    ),
-                                    'MMM d, yyyy'
-                                  )
-                                : 'N/A'}
-                            </span>
-                          </div>
-                          <Badge
-                            variant='outline'
-                            className='text-white border-white/30'
-                          >
-                            {movie.original_language.toUpperCase()}
-                          </Badge>
-                        </div>
-
-                        <p className='text-lg text-white/90 leading-relaxed line-clamp-3 max-w-xl'>
-                          {movie.overview}
-                        </p>
-
-                        <div className='flex gap-4'>
-                          <Button
-                            size='lg'
-                            className={
-                              isInWatchlist(movie.id)
-                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }
-                            onClick={() => addToWatchlist(movie)}
-                            disabled={
-                              addingToWatchlist || isInWatchlist(movie.id)
-                            }
-                          >
-                            <Plus className='h-5 w-5' />
-                            {addingToWatchlist
-                              ? 'Adding...'
-                              : isInWatchlist(movie.id)
-                              ? 'Added to Watchlist'
-                              : 'Add to Watchlist'}
-                          </Button>
-                          <Button
-                            size='lg'
-                            variant='outline'
-                            className='text-black border-white/30 hover:bg-white/80'
-                            asChild
-                          >
-                            <Link
-                              href={`/${movie.title ? 'movie' : 'tv'}/${
-                                movie.id
-                              }`}
-                              prefetch={false}
-                            >
-                              <Info className='h-5 w-5' />
-                              More Info
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
+              {/* Content Overlay */}
+              <div className="absolute inset-0 flex flex-col justify-center px-12 lg:px-20 z-10 select-none">
+                <div className="max-w-3xl space-y-8 animate-in fade-in slide-in-from-left-10 duration-1000">
+                  <div className="space-y-4">
+                    <Badge className="glass-dark px-4 py-1.5 rounded-full text-white font-medium border-white/10 gap-2">
+                      <Flame className="size-4 text-orange-500 fill-orange-500" />
+                      Now Trending
+                    </Badge>
+                    
+                    <div className="flex gap-2">
+                       {movie.genre_ids?.slice(0, 2).map(id => (
+                         <span key={id} className="text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/5 text-white/80 font-medium">
+                           {GENRE_MAP[id]}
+                         </span>
+                       ))}
                     </div>
+
+                    <h1 className="text-5xl lg:text-7xl font-bold text-white leading-[1.1] text-glow line-clamp-2">
+                      {movie.title || movie.name}
+                    </h1>
+                  </div>
+
+                  <p className="text-lg text-white/70 leading-relaxed line-clamp-2 max-w-xl font-medium">
+                    {movie.overview}
+                  </p>
+
+                  <div className="flex items-center gap-4 pt-2">
+                    <Button
+                      size="lg"
+                      className={`h-12 px-8 rounded-lg transition-all active:scale-95 shadow-2xl gap-3 font-medium text-base ${
+                        isInWatchlist(movie.id)
+                          ? 'bg-white/10 text-white hover:bg-white/20'
+                          : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/40'
+                      }`}
+                      onClick={() => addToWatchlist(movie)}
+                      disabled={addingToWatchlist || isInWatchlist(movie.id)}
+                    >
+                      {isInWatchlist(movie.id) ? (
+                        <>
+                          <Info className="size-5" />
+                          In Watchlist
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="size-5" />
+                          {addingToWatchlist ? 'Adding...' : 'Add to Watchlist'}
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      size="lg"
+                      variant="ghost"
+                      className="h-12 px-8 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all active:scale-95 font-medium"
+                      asChild
+                    >
+                      <Link href={`/${movie.title ? 'movie' : 'tv'}/${movie.id}`}>
+                        <Info className="size-5" />
+                        View Details
+                      </Link>
+                    </Button>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>{' '}
-          {/* Navigation Arrows */}
+          ))}
+        </div>
+
+        {/* Custom Navigation */}
+        <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-6 z-20 opacity-0 group-hover/slider:opacity-100 transition-opacity">
           <Button
-            variant='ghost'
-            size='icon'
-            className='absolute left-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white hover:text-white cursor-pointer border-none z-20'
+            variant="ghost"
+            size="icon"
+            className="size-12 rounded-lg bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/5 active:scale-90"
             onClick={prevSlide}
           >
-            <ChevronLeft className='h-6 w-6' />
+            <ChevronLeft className="size-6" />
           </Button>
           <Button
-            variant='ghost'
-            size='icon'
-            className='absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white hover:text-white cursor-pointer border-none z-20'
+            variant="ghost"
+            size="icon"
+            className="size-12 rounded-lg bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/5 active:scale-90"
             onClick={nextSlide}
           >
-            <ChevronRight className='h-6 w-6' />
+            <ChevronRight className="size-6" />
           </Button>
-        </section>
-      </div>
+        </div>
 
-      {/* Slide Indicators */}
-      <div className='absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3'>
-        {heroMovies.map((_, index) => (
-          <button
-            key={index}
-            className={`relative transition-all duration-300 ease-in-out ${
-              index === currentSlide
-                ? 'w-8 h-3 bg-white shadow-lg'
-                : 'w-3 h-3 bg-white/40 hover:bg-white/60'
-            } rounded-full overflow-hidden`}
-            onClick={() => setCurrentSlide(index)}
-          >
-            {index === currentSlide && (
-              <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse' />
-            )}
-          </button>
-        ))}
+        {/* High-fidelity Slide Indicators */}
+        <div className="absolute bottom-10 right-12 flex items-center gap-3 z-20">
+          {heroMovies.map((_, index: number) => (
+            <button
+              key={index}
+              className="group relative flex items-center h-4 transition-all"
+              onClick={() => setCurrentSlide(index)}
+            >
+              <div 
+                className={`transition-all duration-500 rounded-full ${
+                  index === currentSlide 
+                    ? 'w-10 h-2 bg-white' 
+                    : 'w-2 h-2 bg-white/30 group-hover:bg-white/50'
+                }`} 
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   )

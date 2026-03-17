@@ -15,7 +15,7 @@ export default function UpcomingLoadingSkeleton() {
               <div className='w-[80%] mx-auto'>
                 <div className='max-w-2xl space-y-6'>
                   <div className='space-y-2'>
-                    <Skeleton className='h-8 w-32 bg-white/20 rounded-3xl' />
+                    <Skeleton className='h-8 w-32 bg-white/20 rounded-lg' />
                     <Skeleton className='h-12 lg:h-16 w-3/4 bg-white/20' />
                   </div>
 
@@ -72,7 +72,7 @@ export default function UpcomingLoadingSkeleton() {
         </header>
 
         {/* Media Grid Skeleton */}
-        <section className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
+        <div className='grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
           {Array.from({ length: 20 }, (_, i) => (
             <div key={i} className='space-y-3'>
               <Skeleton className='w-full h-96 rounded-lg' />
@@ -85,7 +85,7 @@ export default function UpcomingLoadingSkeleton() {
               </div>
             </div>
           ))}
-        </section>
+        </div>
 
         {/* Pagination Skeleton */}
         <div className='flex justify-center items-center gap-2 py-6'>

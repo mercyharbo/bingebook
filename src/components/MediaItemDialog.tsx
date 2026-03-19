@@ -87,7 +87,7 @@ export default function MediaItemDialog({
                 <div className='flex items-center gap-2'>
                   <Calendar className='size-3 md:size-4' />
                   <span>
-                    {date ? format(parseISO(date), 'MMM d, yyyy') : 'N/A'}
+                    {date && date !== 'N/A' ? format(parseISO(date), 'MMM d, yyyy') : 'N/A'}
                   </span>
                 </div>
                 <Badge

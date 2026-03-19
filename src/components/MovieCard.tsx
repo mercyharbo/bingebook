@@ -87,7 +87,7 @@ export default function MovieCard({
             {title}
           </h3>
           <div className='flex items-center justify-between text-[11px] font-medium text-white/40'>
-            <span>{date ? format(parseISO(date), 'yyyy') : 'N/A'}</span>
+            <span>{date && date !== 'N/A' ? format(parseISO(date), 'yyyy') : 'N/A'}</span>
             <span className='line-clamp-1 max-w-[60%]'>
               {movie.genre_ids
                 ?.slice(0, 1)

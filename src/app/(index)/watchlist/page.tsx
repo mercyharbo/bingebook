@@ -408,30 +408,6 @@ export default function WatchlistPage() {
           </div>
         ) : (
           <div className='space-y-12'>
-            <div className='flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none'>
-              {filters.map((filter) => (
-                <Button
-                  key={filter.id}
-                  variant='ghost'
-                  onClick={() => setActiveFilter(filter.id)}
-                  className={`h-9 px-4 rounded-full text-sm font-medium transition-all ${
-                    activeFilter === filter.id
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                      : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
-                  }`}
-                >
-                  {filter.label}
-                  <span
-                    className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-                      activeFilter === filter.id ? 'bg-white/20' : 'bg-white/10'
-                    }`}
-                  >
-                    {filter.count}
-                  </span>
-                </Button>
-              ))}
-            </div>
-
             <section className='grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6'>
               {paginatedItems.map((item) => (
                 <div

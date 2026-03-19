@@ -266,9 +266,9 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
 
         <div className='absolute bottom-0 left-0 right-0 py-20'>
           <div className='container mx-auto px-6 lg:px-12'>
-            <div className='flex flex-col lg:flex-row gap-10 items-end'>
+            <div className='flex flex-col lg:flex-row gap-10 items-start lg:items-end'>
               <div className='flex-shrink-0 w-[200px] lg:w-[280px] group relative'>
-                <div className='absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200'></div>
+                {/* <div className='absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200'></div> */}
                 <Image
                   src={
                     tvShow.poster_path
@@ -381,34 +381,34 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
       {/* Main Content Sections */}
       <div className='container mx-auto px-6 lg:px-12 py-12'>
         <Tabs defaultValue='overview' className='w-full space-y-12'>
-          <TabsList className='bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-lg h-14 w-full lg:w-max mx-auto lg:mx-0'>
+          <TabsList className='bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-lg h-14 w-full lg:w-max mx-auto lg:mx-0 overflow-x-auto scrollbar-hide justify-start lg:justify-center'>
             <TabsTrigger
               value='overview'
-              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex-shrink-0'
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value='seasons'
-              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex-shrink-0'
             >
               Seasons
             </TabsTrigger>
             <TabsTrigger
               value='cast'
-              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex-shrink-0'
             >
               Cast
             </TabsTrigger>
             <TabsTrigger
               value='videos'
-              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex-shrink-0'
             >
               Videos
             </TabsTrigger>
             <TabsTrigger
               value='reviews'
-              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all'
+              className=' px-8 font-medium data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex-shrink-0'
             >
               Reviews
             </TabsTrigger>

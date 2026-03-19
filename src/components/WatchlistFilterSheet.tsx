@@ -46,7 +46,7 @@ export default function FilterSheet({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side='right'
-        className='w-[400px] h-[90dvh] mr-5 rounded-lg my-auto overflow-auto scrollbar-hide pb-[3rem] p-2'
+        className='sm:w-[400px] w-[80%] h-dvh overflow-auto scrollbar-hide pb-[3rem] p-2'
       >
         <SheetHeader>
           <SheetTitle>Filter Your Watchlist</SheetTitle>

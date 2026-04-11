@@ -59,6 +59,19 @@ export default function WatchlistPage() {
 
   const itemsPerPage = 25
 
+  const FINISHED_STATUSES = ['Ended', 'Canceled']
+  const CONTINUING_STATUSES = ['Returning Series', 'In Production', 'Planned']
+
+  const isCaughtUp = (item: WatchlistItem) => {
+    if (item.media_type === 'movie') return item.is_seen
+    return (
+      item.is_seen ||
+      (item.tmdb_data.number_of_seasons &&
+        item.tmdb_data.number_of_seasons > 0 &&
+        item.completed_seasons.length >= item.tmdb_data.number_of_seasons)
+    )
+  }
+
   useEffect(() => {
     const fetchWatchlist = async () => {
       setIsLoading(true)
@@ -121,11 +134,8 @@ export default function WatchlistPage() {
       count: watchlistItems.filter(
         (item) =>
           item.media_type === 'tv' &&
-          Object.keys(item.seen_episodes).length > 0 &&
-          Object.values(item.seen_episodes).reduce(
-            (sum: number, eps: string[]) => sum + eps.length,
-            0,
-          ) < (item.tmdb_data.number_of_episodes || Infinity),
+          !isCaughtUp(item) &&
+          Object.keys(item.seen_episodes).length > 0,
       ).length,
     },
     {
@@ -133,11 +143,22 @@ export default function WatchlistPage() {
       label: 'Watched',
       count: watchlistItems.filter(
         (item) =>
-          item.is_seen ||
-          (item.media_type === 'tv' &&
-            item.tmdb_data.number_of_seasons &&
-            item.tmdb_data.number_of_seasons > 0 &&
-            item.completed_seasons.length === item.tmdb_data.number_of_seasons),
+          isCaughtUp(item) &&
+          (item.media_type === 'movie' ||
+            item.is_seen ||
+            FINISHED_STATUSES.includes(item.tmdb_data.status || '')),
+      ).length,
+    },
+    {
+      id: 'coming-soon',
+      label: 'Coming Soon',
+      count: watchlistItems.filter(
+        (item) =>
+          item.media_type === 'tv' &&
+          isCaughtUp(item) &&
+          !item.is_seen &&
+          (CONTINUING_STATUSES.includes(item.tmdb_data.status || '') ||
+            !item.tmdb_data.status),
       ).length,
     },
     {
@@ -145,7 +166,7 @@ export default function WatchlistPage() {
       label: 'Planned',
       count: watchlistItems.filter(
         (item) =>
-          !item.is_seen &&
+          !isCaughtUp(item) &&
           (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0),
       ).length,
     },
@@ -286,23 +307,27 @@ export default function WatchlistPage() {
       if (activeFilter === 'watching')
         return (
           item.media_type === 'tv' &&
-          Object.keys(item.seen_episodes).length > 0 &&
-          Object.values(item.seen_episodes).reduce(
-            (sum: number, eps: string[]) => sum + eps.length,
-            0,
-          ) < (item.tmdb_data.number_of_episodes || Infinity)
+          !isCaughtUp(item) &&
+          Object.keys(item.seen_episodes).length > 0
         )
       if (activeFilter === 'watched')
         return (
-          item.is_seen ||
-          (item.media_type === 'tv' &&
-            item.tmdb_data.number_of_seasons &&
-            item.tmdb_data.number_of_seasons > 0 &&
-            item.completed_seasons.length === item.tmdb_data.number_of_seasons)
+          isCaughtUp(item) &&
+          (item.media_type === 'movie' ||
+            item.is_seen ||
+            FINISHED_STATUSES.includes(item.tmdb_data.status || ''))
+        )
+      if (activeFilter === 'coming-soon')
+        return (
+          item.media_type === 'tv' &&
+          isCaughtUp(item) &&
+          !item.is_seen &&
+          (CONTINUING_STATUSES.includes(item.tmdb_data.status || '') ||
+            !item.tmdb_data.status)
         )
       if (activeFilter === 'planned')
         return (
-          !item.is_seen &&
+          !isCaughtUp(item) &&
           (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0)
         )
       return true

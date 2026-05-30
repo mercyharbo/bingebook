@@ -83,19 +83,19 @@ const PersonDetailsContent: React.FC<PersonDetailsContentProps> = ({
 
   // Fetch person details
   const { data: person, isLoading: personLoading } = useSWR<Person>(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}?language=en-US`,
+    `/api/tmdb/person/${personId}?language=en-US`,
     fetcher
   )
 
   // Fetch movie credits
   const { data: movieCredits, isLoading: movieLoading } = useSWR<Credits>(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}/movie_credits?language=en-US`,
+    `/api/tmdb/person/${personId}/movie_credits?language=en-US`,
     fetcher
   )
 
   // Fetch TV credits
   const { data: tvCredits, isLoading: tvLoading } = useSWR<Credits>(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/person/${personId}/tv_credits?language=en-US`,
+    `/api/tmdb/person/${personId}/tv_credits?language=en-US`,
     fetcher
   )
 

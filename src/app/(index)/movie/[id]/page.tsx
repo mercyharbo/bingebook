@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const movie = await fetcher(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${id}?language=en-US`
+      `/api/tmdb/movie/${id}?language=en-US`
     )
 
     const description = movie.overview

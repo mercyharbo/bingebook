@@ -110,7 +110,7 @@ export default function Discover() {
   })
 
   const { isLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/discover/${mediaType}?${queryParams}`,
+    `/api/tmdb/discover/${mediaType}?${queryParams}`,
     fetcher,
     {
       onSuccess: (data) => {
@@ -180,20 +180,6 @@ export default function Discover() {
     return false
   })
 
-  const nextSlide = () => {
-    if (!movieList) return
-    setCurrentSlide((prev) => (prev + 1) % Math.min(movieList.length, 10))
-  }
-
-  const prevSlide = () => {
-    if (!movieList) return
-    setCurrentSlide(
-      (prev) =>
-        (prev - 1 + Math.min(movieList.length, 10)) %
-        Math.min(movieList.length, 10),
-    )
-  }
-
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
@@ -219,8 +205,6 @@ export default function Discover() {
           moviesList={movieList}
           currentSlide={currentSlide}
           setCurrentSlide={setCurrentSlide}
-          nextSlide={nextSlide}
-          prevSlide={prevSlide}
           addToWatchlist={addToWatchlist}
           isInWatchlist={isInWatchlist}
           addingToWatchlist={addingToWatchlist}

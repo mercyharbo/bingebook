@@ -20,6 +20,7 @@ import {
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
 import { cn, fetcher } from '@/lib/utils'
+import { isEpisodeAvailable } from '@/lib/watchlistStatus'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import useSWR from 'swr'
@@ -28,7 +29,12 @@ import LoadingSpinner from './ui/loading-spinner'
 interface TVProgressTrackerProps {
   watchlistId: number
   tmdbId: number
-  seasons: { season_number: number; episode_count: number; name: string }[]
+  seasons: {
+    season_number: number
+    episode_count: number
+    name: string
+    air_date?: string | null
+  }[]
   seenEpisodes: Record<string, string[]>
   completedSeasons: number[]
   onProgressUpdate?: (
@@ -79,7 +85,7 @@ export default function TVProgressTracker({
     seasons?.filter((season) => season.season_number > 0) || []
 
   const { data, error, isLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tmdbId}/season/${selectedSeason}`,
+    `/api/tmdb/tv/${tmdbId}/season/${selectedSeason}`,
     fetcher,
     { revalidateOnFocus: false }
   )
@@ -100,8 +106,23 @@ export default function TVProgressTracker({
         [seasonKey]: newEpisodes,
       }
 
-      const seasonEpisodes = episodes.length
-      const isSeasonComplete = newEpisodes.length === seasonEpisodes
+      const availableEpisodes = episodes.filter((episode) =>
+        isEpisodeAvailable(episode.air_date),
+      )
+      const availableEpisodeCodes = new Set(
+        availableEpisodes.map(
+          (availableEpisode) =>
+            `S${selectedSeason.padStart(2, '0')}E${availableEpisode.episode_number
+              .toString()
+              .padStart(2, '0')}`,
+        ),
+      )
+      const watchedAvailableCount = newEpisodes.filter((episodeCode) =>
+        availableEpisodeCodes.has(episodeCode),
+      ).length
+      const isSeasonComplete =
+        availableEpisodes.length > 0 &&
+        watchedAvailableCount >= availableEpisodes.length
       const newCompletedSeasons = isSeasonComplete
         ? [...new Set([...completedSeasons, parseInt(selectedSeason)])]
         : completedSeasons.filter((s) => s !== parseInt(selectedSeason))
@@ -173,9 +194,10 @@ export default function TVProgressTracker({
         [`season_${selectedSeason}`]: allEpisodeCodes,
       }
 
-      const newCompletedSeasons = [
-        ...new Set([...completedSeasons, parseInt(selectedSeason)]),
-      ]
+      const newCompletedSeasons =
+        allEpisodeCodes.length > 0
+          ? [...new Set([...completedSeasons, parseInt(selectedSeason)])]
+          : completedSeasons.filter((s) => s !== parseInt(selectedSeason))
 
       // Update local state immediately for instant UI feedback
       setSeenEpisodes(updatedSeenEpisodes)
@@ -217,30 +239,39 @@ export default function TVProgressTracker({
     }
   }
 
+  const availableSeasons = validSeasons.filter((season) =>
+    isEpisodeAvailable(season.air_date),
+  )
   const allSeasonsCompleted =
-    validSeasons.length > 0 &&
+    availableSeasons.length > 0 &&
     completedSeasons.length > 0 &&
-    validSeasons.every((season) =>
-      completedSeasons.includes(season.season_number)
+    availableSeasons.every((season) =>
+      completedSeasons.includes(season.season_number),
     )
-
-  const isEpisodeAvailable = (airDate: string | null) => {
-    if (!airDate) return false
-    const episodeDate = new Date(airDate)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
-    return episodeDate <= today
-  }
 
   const allEpisodesInSeasonSeen = (() => {
     const availableEpisodes = episodes.filter((episode) =>
       isEpisodeAvailable(episode.air_date)
     )
-    const seenCount = seenEpisodes[`season_${selectedSeason}`]?.length || 0
+    const availableEpisodeCodes = new Set(
+      availableEpisodes.map(
+        (episode) =>
+          `S${selectedSeason.padStart(2, '0')}E${episode.episode_number
+            .toString()
+            .padStart(2, '0')}`,
+      ),
+    )
+    const seenCount = (seenEpisodes[`season_${selectedSeason}`] || []).filter(
+      (episodeCode) => availableEpisodeCodes.has(episodeCode),
+    ).length
     return (
       availableEpisodes.length > 0 && seenCount === availableEpisodes.length
     )
   })()
+
+  const hasAvailableEpisodes = episodes.some((episode) =>
+    isEpisodeAvailable(episode.air_date),
+  )
 
   return (
     <Dialog>
@@ -292,6 +323,7 @@ export default function TVProgressTracker({
               disabled={
                 isLoading ||
                 episodes.length === 0 ||
+                !hasAvailableEpisodes ||
                 isMarkingAll ||
                 allEpisodesInSeasonSeen
               }

@@ -122,9 +122,7 @@ export default function NavHeader() {
 
   const { data: searchResults } = useSWR(
     debouncedSearch
-      ? `${
-          process.env.NEXT_PUBLIC_BASE_URL
-        }/search/multi?query=${encodeURIComponent(
+      ? `/api/tmdb/search/multi?query=${encodeURIComponent(
           debouncedSearch,
         )}&include_adult=false&language=en-US&page=1`
       : null,

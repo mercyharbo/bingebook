@@ -113,7 +113,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
     mutate,
   } = useSWR<MovieDetails>(
     movieId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}?language=en-US`
+      ? `/api/tmdb/movie/${movieId}?language=en-US`
       : null,
     fetcher,
   )
@@ -121,7 +121,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   // Fetch credits
   const { data: credits } = useSWR(
     movieId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/credits?language=en-US`
+      ? `/api/tmdb/movie/${movieId}/credits?language=en-US`
       : null,
     fetcher,
   )
@@ -129,7 +129,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   // Fetch videos
   const { data: videos } = useSWR(
     movieId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/videos?language=en-US`
+      ? `/api/tmdb/movie/${movieId}/videos?language=en-US`
       : null,
     fetcher,
   )
@@ -137,7 +137,7 @@ export default function MovieDetailsComp({ movieId }: { movieId: string }) {
   // Fetch reviews
   const { data: reviews } = useSWR(
     movieId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/movie/${movieId}/reviews?language=en-US&page=1`
+      ? `/api/tmdb/movie/${movieId}/reviews?language=en-US&page=1`
       : null,
     fetcher,
   )

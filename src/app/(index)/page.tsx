@@ -27,7 +27,7 @@ export default function HomePageComp() {
   const { addingToWatchlist, setAddingToWatchlist } = useWatchlistStore()
 
   const { isLoading: moviesLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/trending/movie/week`,
+    `/api/tmdb/trending/movie/week`,
     fetcher,
     {
       onSuccess: (data) => {
@@ -71,20 +71,6 @@ export default function HomePageComp() {
 
     return () => clearInterval(interval)
   }, [moviesList, setCurrentSlide])
-
-  const nextSlide = () => {
-    if (!moviesList) return
-    setCurrentSlide((prev) => (prev + 1) % Math.min(moviesList.length, 10))
-  }
-
-  const prevSlide = () => {
-    if (!moviesList) return
-    setCurrentSlide(
-      (prev) =>
-        (prev - 1 + Math.min(moviesList.length, 10)) %
-        Math.min(moviesList.length, 10),
-    )
-  }
 
   const addToWatchlist = async (movie: Movie) => {
     const { data: sessionData, error: sessionError } =
@@ -138,8 +124,6 @@ export default function HomePageComp() {
           moviesList={moviesList}
           currentSlide={currentSlide}
           setCurrentSlide={setCurrentSlide}
-          nextSlide={nextSlide}
-          prevSlide={prevSlide}
           addToWatchlist={addToWatchlist}
           isInWatchlist={isInWatchlist}
           addingToWatchlist={addingToWatchlist}

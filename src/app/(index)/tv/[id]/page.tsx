@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const tvShow = await fetcher(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${id}?language=en-US`
+      `/api/tmdb/tv/${id}?language=en-US`
     )
 
     const description = tvShow.overview

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const person = await fetcher(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/person/${id}?language=en-US`
+      `/api/tmdb/person/${id}?language=en-US`
     )
 
     const description = person.biography

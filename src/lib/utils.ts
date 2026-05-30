@@ -5,13 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const fetcher = (url: string) =>
-  fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  }).then((res) => {
-    if (!res.ok) throw new Error('Failed to fetch')
-    return res.json()
-  })
+const getServerBaseUrl = () => {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  if (process.env.APP_URL) return process.env.APP_URL
+  return 'http://localhost:3000'
+}
+
+export const fetcher = async (url: string) => {
+  const requestUrl =
+    typeof window === 'undefined' && url.startsWith('/')
+      ? `${getServerBaseUrl()}${url}`
+      : url
+
+  const res = await fetch(requestUrl)
+
+  if (!res.ok) throw new Error('Failed to fetch')
+  return res.json()
+}

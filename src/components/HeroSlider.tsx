@@ -7,13 +7,12 @@ import type { Movie } from '@/types/movie'
 import { ChevronLeft, ChevronRight, Flame, Info, Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useCallback, useEffect } from 'react'
 
 interface HeroSliderProps {
   moviesList: Movie[] | null
   currentSlide: number
   setCurrentSlide: (slide: number | ((prev: number) => number)) => void
-  nextSlide: () => void
-  prevSlide: () => void
   addToWatchlist: (movie: Movie) => void
   isInWatchlist: (movieId: number) => boolean
   addingToWatchlist: boolean
@@ -23,15 +22,40 @@ export default function HeroSlider({
   moviesList,
   currentSlide,
   setCurrentSlide,
-  nextSlide,
-  prevSlide,
   addToWatchlist,
   isInWatchlist,
   addingToWatchlist,
 }: HeroSliderProps) {
   const heroMovies = moviesList?.slice(0, 10) || []
+  const slideCount = heroMovies.length
+  const normalizedSlide =
+    slideCount > 0 ? ((currentSlide % slideCount) + slideCount) % slideCount : 0
 
-  if (!moviesList || moviesList.length === 0) {
+  const goToSlide = useCallback(
+    (index: number) => {
+      if (slideCount === 0) return
+      setCurrentSlide(((index % slideCount) + slideCount) % slideCount)
+    },
+    [setCurrentSlide, slideCount],
+  )
+
+  const handleNextSlide = useCallback(() => {
+    if (slideCount === 0) return
+    setCurrentSlide((prev) => (prev + 1) % slideCount)
+  }, [setCurrentSlide, slideCount])
+
+  const handlePrevSlide = useCallback(() => {
+    if (slideCount === 0) return
+    setCurrentSlide((prev) => (prev - 1 + slideCount) % slideCount)
+  }, [setCurrentSlide, slideCount])
+
+  useEffect(() => {
+    if (slideCount > 0 && currentSlide !== normalizedSlide) {
+      setCurrentSlide(normalizedSlide)
+    }
+  }, [currentSlide, normalizedSlide, setCurrentSlide, slideCount])
+
+  if (slideCount === 0) {
     return null
   }
 
@@ -41,7 +65,7 @@ export default function HeroSlider({
         <div
           className='flex h-full gap-0 transition-transform duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform'
           style={{
-            transform: `translate3d(calc(-100% * ${currentSlide}), 0, 0)`,
+            transform: `translate3d(calc(-100% * ${normalizedSlide}), 0, 0)`,
           }}
         >
           {heroMovies.map((movie: Movie, index: number) => (
@@ -138,7 +162,9 @@ export default function HeroSlider({
             variant='ghost'
             size='icon'
             className='size-12 rounded-lg bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/5 active:scale-90'
-            onClick={prevSlide}
+            onClick={handlePrevSlide}
+            disabled={slideCount < 2}
+            aria-label='Previous slide'
           >
             <ChevronLeft className='size-6' />
           </Button>
@@ -146,7 +172,9 @@ export default function HeroSlider({
             variant='ghost'
             size='icon'
             className='size-12 rounded-lg bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/5 active:scale-90'
-            onClick={nextSlide}
+            onClick={handleNextSlide}
+            disabled={slideCount < 2}
+            aria-label='Next slide'
           >
             <ChevronRight className='size-6' />
           </Button>
@@ -158,11 +186,13 @@ export default function HeroSlider({
             <button
               key={index}
               className='group relative flex items-center h-4 transition-all'
-              onClick={() => setCurrentSlide(index)}
+              onClick={() => goToSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === normalizedSlide}
             >
               <div
                 className={`transition-all duration-500 rounded-full ${
-                  index === currentSlide
+                  index === normalizedSlide
                     ? 'w-10 h-2 bg-white'
                     : 'w-2 h-2 bg-white/30 group-hover:bg-white/50'
                 }`}

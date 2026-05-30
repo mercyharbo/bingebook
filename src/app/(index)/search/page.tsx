@@ -41,9 +41,7 @@ function SearchContent() {
 
   const { data, error, isLoading } = useSWR<ApiResponse>(
     query
-      ? `${
-          process.env.NEXT_PUBLIC_BASE_URL
-        }/search/multi?query=${encodeURIComponent(
+      ? `/api/tmdb/search/multi?query=${encodeURIComponent(
           query
         )}&include_adult=false&language=en-US&page=${page}`
       : null,

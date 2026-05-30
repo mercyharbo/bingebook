@@ -85,7 +85,7 @@ export default function UpcomingMoviesPage() {
   })
 
   const { error, isLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/movie/upcoming?${queryParams}`,
+    `/api/tmdb/movie/upcoming?${queryParams}`,
     fetcher,
     {
       onSuccess: (data) => {
@@ -152,14 +152,6 @@ export default function UpcomingMoviesPage() {
     return () => clearInterval(interval)
   }, [setCurrentSlide])
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % 10)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + 10) % 10)
-  }
-
   if (isLoading) return <UpcomingLoadingSkeleton />
 
   return (
@@ -169,8 +161,6 @@ export default function UpcomingMoviesPage() {
         moviesList={upcomingMovies}
         currentSlide={currentSlide}
         setCurrentSlide={setCurrentSlide}
-        nextSlide={nextSlide}
-        prevSlide={prevSlide}
         addToWatchlist={addToWatchlist}
         isInWatchlist={isInWatchlist}
         addingToWatchlist={addingToWatchlist}

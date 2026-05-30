@@ -68,7 +68,7 @@ export default function WatchlistItemDialog({
       ) {
         try {
           const data = await fetcher(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${selectedItem.tmdb_id}?language=en-US`,
+            `/api/tmdb/tv/${selectedItem.tmdb_id}?language=en-US`,
           )
           setTvSeasons(data.seasons || [])
           // Update the parent and database with the full TV metadata

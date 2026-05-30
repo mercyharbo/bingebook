@@ -25,7 +25,7 @@ export default function TrendingGrid({
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/trending/${type}/week?page=${page}`,
+    `/api/tmdb/trending/${type}/week?page=${page}`,
     fetcher,
   )
 

@@ -8,6 +8,13 @@ export interface TMDBSeason {
   season_number: number
   episode_count: number
   name: string
+  air_date?: string | null
+}
+
+export interface TMDBEpisode {
+  episode_number: number
+  name?: string
+  air_date: string | null
 }
 
 export interface TMDBData {

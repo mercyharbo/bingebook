@@ -40,7 +40,7 @@ export default function EpisodesDialog({ tvId, season }: EpisodesDialogProps) {
     episodes: Episode[]
   }>(
     isOpen
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/season/${season.season_number}?language=en-US`
+      ? `/api/tmdb/tv/${tvId}/season/${season.season_number}?language=en-US`
       : null,
     fetcher,
   )

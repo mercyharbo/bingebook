@@ -19,9 +19,15 @@ import WatchlistLoadingSkeleton from '@/components/WatchlistLoadingSkeleton'
 import { useWatchlistPageStore } from '@/lib/store/watchlistPageStore'
 import { useWatchlistStore } from '@/lib/store/watchlistStore'
 import { createClient } from '@/lib/supabase/client'
+import { fetcher } from '@/lib/utils'
+import {
+  classifyWatchlistItem,
+  getTVProgressSummary,
+  SeasonEpisodeMap,
+} from '@/lib/watchlistStatus'
 import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import { TMDBSeason, WatchlistItem } from '@/types/watchlist'
@@ -58,19 +64,14 @@ export default function WatchlistPage() {
     useWatchlistStore()
 
   const itemsPerPage = 25
-
-  const FINISHED_STATUSES = ['Ended', 'Canceled']
-  const CONTINUING_STATUSES = ['Returning Series', 'In Production', 'Planned']
-
-  const isCaughtUp = (item: WatchlistItem) => {
-    if (item.media_type === 'movie') return item.is_seen
-    return (
-      item.is_seen ||
-      (item.tmdb_data.number_of_seasons &&
-        item.tmdb_data.number_of_seasons > 0 &&
-        item.completed_seasons.length >= item.tmdb_data.number_of_seasons)
-    )
-  }
+  const [episodeDetails, setEpisodeDetails] = useState<
+    Record<number, SeasonEpisodeMap>
+  >({})
+  const getItemStatus = useCallback(
+    (item: WatchlistItem) =>
+      classifyWatchlistItem(item, episodeDetails[item.id] || {}),
+    [episodeDetails],
+  )
 
   useEffect(() => {
     const fetchWatchlist = async () => {
@@ -115,6 +116,112 @@ export default function WatchlistPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
+  useEffect(() => {
+    const fetchEpisodeDetails = async () => {
+      const tvItems = await Promise.all(
+        watchlistItems
+          .filter((item) => item.media_type === 'tv')
+          .map(async (item) => {
+            if (item.tmdb_data.seasons && item.tmdb_data.seasons.length > 0) {
+              return item
+            }
+
+            try {
+              const data = await fetcher(
+                `/api/tmdb/tv/${item.tmdb_id}?language=en-US`,
+              )
+              const updatedTmdbData: WatchlistItem['tmdb_data'] = {
+                ...item.tmdb_data,
+                ...data,
+                seasons: data.seasons || [],
+              }
+
+              const { error } = await supabase
+                .from('watchlist')
+                .update({
+                  tmdb_data: updatedTmdbData,
+                  last_updated: new Date().toISOString(),
+                })
+                .eq('id', item.id)
+
+              if (!error) {
+                updateWatchlistItem(item.id, { tmdb_data: updatedTmdbData })
+              }
+
+              return {
+                ...item,
+                tmdb_data: updatedTmdbData,
+              } satisfies WatchlistItem
+            } catch (error) {
+              console.error('Error fetching TV metadata:', error)
+              return item
+            }
+          }),
+      )
+
+      const itemsMissingEpisodeDetails = tvItems.filter((item) =>
+        item.tmdb_data.seasons?.some(
+          (season) =>
+            season.season_number > 0 &&
+            !episodeDetails[item.id]?.[season.season_number],
+        ),
+      )
+
+      await Promise.all(
+        itemsMissingEpisodeDetails.map(async (item) => {
+          const seasons = (item.tmdb_data.seasons || []).filter(
+            (season) => season.season_number > 0,
+          )
+          const fetchedEntries = await Promise.all(
+            seasons.map(async (season) => {
+              try {
+                const data = await fetcher(
+                  `/api/tmdb/tv/${item.tmdb_id}/season/${season.season_number}?language=en-US`,
+                )
+                return [season.season_number, data.episodes || []] as const
+              } catch (error) {
+                console.error('Error fetching season episodes:', error)
+                return [season.season_number, null] as const
+              }
+            }),
+          )
+
+          const fetchedMap = fetchedEntries.reduce<SeasonEpisodeMap>(
+            (map, [seasonNumber, episodes]) => {
+              if (episodes) map[seasonNumber] = episodes
+              return map
+            },
+            {},
+          )
+
+          if (Object.keys(fetchedMap).length > 0) {
+            setEpisodeDetails((prev) => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                ...fetchedMap,
+              },
+            }))
+          }
+        }),
+      )
+    }
+
+    if (watchlistItems.length > 0) fetchEpisodeDetails()
+  }, [episodeDetails, supabase, updateWatchlistItem, watchlistItems])
+
+  const statusByItemId = useMemo(
+    () =>
+      watchlistItems.reduce<Record<number, ReturnType<typeof getItemStatus>>>(
+        (statuses, item) => {
+          statuses[item.id] = getItemStatus(item)
+          return statuses
+        },
+        {},
+      ),
+    [getItemStatus, watchlistItems],
+  )
+
   const filters = [
     { id: 'all', label: 'All', count: watchlistItems.length },
     {
@@ -132,42 +239,28 @@ export default function WatchlistPage() {
       id: 'watching',
       label: 'Watching',
       count: watchlistItems.filter(
-        (item) =>
-          item.media_type === 'tv' &&
-          !isCaughtUp(item) &&
-          Object.keys(item.seen_episodes).length > 0,
+        (item) => statusByItemId[item.id] === 'watching',
       ).length,
     },
     {
       id: 'watched',
       label: 'Watched',
       count: watchlistItems.filter(
-        (item) =>
-          isCaughtUp(item) &&
-          (item.media_type === 'movie' ||
-            item.is_seen ||
-            FINISHED_STATUSES.includes(item.tmdb_data.status || '')),
+        (item) => statusByItemId[item.id] === 'watched',
       ).length,
     },
     {
       id: 'coming-soon',
       label: 'Coming Soon',
       count: watchlistItems.filter(
-        (item) =>
-          item.media_type === 'tv' &&
-          isCaughtUp(item) &&
-          !item.is_seen &&
-          (CONTINUING_STATUSES.includes(item.tmdb_data.status || '') ||
-            !item.tmdb_data.status),
+        (item) => statusByItemId[item.id] === 'coming-soon',
       ).length,
     },
     {
       id: 'planned',
       label: 'Planned',
       count: watchlistItems.filter(
-        (item) =>
-          !isCaughtUp(item) &&
-          (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0),
+        (item) => statusByItemId[item.id] === 'planned',
       ).length,
     },
   ]
@@ -305,31 +398,11 @@ export default function WatchlistPage() {
       if (activeFilter === 'movies') return item.media_type === 'movie'
       if (activeFilter === 'tv') return item.media_type === 'tv'
       if (activeFilter === 'watching')
-        return (
-          item.media_type === 'tv' &&
-          !isCaughtUp(item) &&
-          Object.keys(item.seen_episodes).length > 0
-        )
-      if (activeFilter === 'watched')
-        return (
-          isCaughtUp(item) &&
-          (item.media_type === 'movie' ||
-            item.is_seen ||
-            FINISHED_STATUSES.includes(item.tmdb_data.status || ''))
-        )
+        return statusByItemId[item.id] === 'watching'
+      if (activeFilter === 'watched') return statusByItemId[item.id] === 'watched'
       if (activeFilter === 'coming-soon')
-        return (
-          item.media_type === 'tv' &&
-          isCaughtUp(item) &&
-          !item.is_seen &&
-          (CONTINUING_STATUSES.includes(item.tmdb_data.status || '') ||
-            !item.tmdb_data.status)
-        )
-      if (activeFilter === 'planned')
-        return (
-          !isCaughtUp(item) &&
-          (!item.seen_episodes || Object.keys(item.seen_episodes).length === 0)
-        )
+        return statusByItemId[item.id] === 'coming-soon'
+      if (activeFilter === 'planned') return statusByItemId[item.id] === 'planned'
       return true
     })
     .filter((item) => {
@@ -461,12 +534,7 @@ export default function WatchlistPage() {
                     <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
 
                     {(() => {
-                      const isWatched =
-                        item.media_type === 'movie'
-                          ? item.is_seen
-                          : item.tmdb_data.number_of_seasons &&
-                            item.completed_seasons.length ===
-                              item.tmdb_data.number_of_seasons
+                      const isWatched = statusByItemId[item.id] === 'watched'
 
                       return (
                         isWatched && (
@@ -488,16 +556,28 @@ export default function WatchlistPage() {
                       )}
 
                     {item.media_type === 'tv' &&
-                      item.tmdb_data.number_of_episodes && (
+                      (() => {
+                        const progress = getTVProgressSummary(
+                          item,
+                          episodeDetails[item.id] || {},
+                        )
+                        const totalEpisodes =
+                          progress.availableEpisodes ||
+                          item.tmdb_data.number_of_episodes ||
+                          0
+                        if (totalEpisodes === 0) return null
+
+                        return (
                         <div className='absolute bottom-0 left-0 right-0 h-1 bg-white/20'>
                           <div
                             className='h-full bg-primary'
                             style={{
-                              width: `${(Object.values(item.seen_episodes).reduce((a: number, b: string[]) => a + b.length, 0) / item.tmdb_data.number_of_episodes) * 100}%`,
+                              width: `${Math.min((progress.watchedAvailableEpisodes / totalEpisodes) * 100, 100)}%`,
                             }}
                           />
                         </div>
-                      )}
+                        )
+                      })()}
                   </div>
 
                   <div className='px-4 py-3 space-y-1'>

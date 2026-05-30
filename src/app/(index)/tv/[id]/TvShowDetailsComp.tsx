@@ -125,28 +125,28 @@ export default function TvShowDetailsComp({ tvId }: { tvId: string }) {
     mutate,
   } = useSWR<TVShowDetails>(
     tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}?language=en-US`
+      ? `/api/tmdb/tv/${tvId}?language=en-US`
       : null,
     fetcher,
   )
 
   const { data: credits } = useSWR(
     tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/credits?language=en-US`
+      ? `/api/tmdb/tv/${tvId}/credits?language=en-US`
       : null,
     fetcher,
   )
 
   const { data: videos } = useSWR(
     tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/videos?language=en-US`
+      ? `/api/tmdb/tv/${tvId}/videos?language=en-US`
       : null,
     fetcher,
   )
 
   const { data: reviews } = useSWR(
     tvId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/tv/${tvId}/reviews?language=en-US&page=1`
+      ? `/api/tmdb/tv/${tvId}/reviews?language=en-US&page=1`
       : null,
     fetcher,
   )

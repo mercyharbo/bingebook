@@ -27,7 +27,7 @@ import {
 } from '@/lib/watchlistStatus'
 import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import { TMDBSeason, WatchlistItem } from '@/types/watchlist'
@@ -67,6 +67,9 @@ export default function WatchlistPage() {
   const [episodeDetails, setEpisodeDetails] = useState<
     Record<number, SeasonEpisodeMap>
   >({})
+  const attemptedEpisodeDetails = useRef<Record<number, Record<number, boolean>>>(
+    {},
+  )
   const getItemStatus = useCallback(
     (item: WatchlistItem) =>
       classifyWatchlistItem(item, episodeDetails[item.id] || {}),
@@ -117,6 +120,71 @@ export default function WatchlistPage() {
   }, [currentPage])
 
   useEffect(() => {
+    let isCancelled = false
+
+    const getSeasonNumberFromKey = (key: string) => {
+      const match = key.match(/^season_(\d+)$/)
+      return match ? Number(match[1]) : null
+    }
+
+    const getToday = () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return today
+    }
+
+    const getSeasonTime = (airDate: string | null | undefined) => {
+      if (!airDate) return null
+      const date = new Date(airDate)
+      if (Number.isNaN(date.getTime())) return null
+      date.setHours(0, 0, 0, 0)
+      return date.getTime()
+    }
+
+    const getSeasonsToFetch = (item: WatchlistItem) => {
+      const today = getToday().getTime()
+      const completedSeasons = new Set(item.completed_seasons || [])
+      const seenSeasonNumbers = new Set(
+        Object.keys(item.seen_episodes || {})
+          .map(getSeasonNumberFromKey)
+          .filter((season): season is number => season !== null),
+      )
+      const validSeasons = (item.tmdb_data.seasons || [])
+        .filter((season) => season.season_number > 0)
+        .filter((season) => {
+          const seasonTime = getSeasonTime(season.air_date)
+          return seasonTime === null || seasonTime <= today
+        })
+
+      const latestAiredSeason = [...validSeasons]
+        .sort((a, b) => b.season_number - a.season_number)
+        .at(0)
+
+      const candidateSeasonNumbers = new Set<number>()
+      if (latestAiredSeason) {
+        candidateSeasonNumbers.add(latestAiredSeason.season_number)
+      }
+
+      validSeasons.forEach((season) => {
+        if (
+          seenSeasonNumbers.has(season.season_number) ||
+          !completedSeasons.has(season.season_number)
+        ) {
+          candidateSeasonNumbers.add(season.season_number)
+        }
+      })
+
+      return validSeasons
+        .filter((season) => candidateSeasonNumbers.has(season.season_number))
+        .filter(
+          (season) =>
+            !episodeDetails[item.id]?.[season.season_number] &&
+            !attemptedEpisodeDetails.current[item.id]?.[season.season_number],
+        )
+        .sort((a, b) => b.season_number - a.season_number)
+        .slice(0, 3)
+    }
+
     const fetchEpisodeDetails = async () => {
       const tvItems = await Promise.all(
         watchlistItems
@@ -159,55 +227,59 @@ export default function WatchlistPage() {
           }),
       )
 
-      const itemsMissingEpisodeDetails = tvItems.filter((item) =>
-        item.tmdb_data.seasons?.some(
-          (season) =>
-            season.season_number > 0 &&
-            !episodeDetails[item.id]?.[season.season_number],
-        ),
-      )
+      const itemsMissingEpisodeDetails = tvItems
+        .map((item) => ({
+          item,
+          seasons: getSeasonsToFetch(item),
+        }))
+        .filter(({ seasons }) => seasons.length > 0)
+        .slice(0, 4)
 
-      await Promise.all(
-        itemsMissingEpisodeDetails.map(async (item) => {
-          const seasons = (item.tmdb_data.seasons || []).filter(
-            (season) => season.season_number > 0,
-          )
-          const fetchedEntries = await Promise.all(
-            seasons.map(async (season) => {
-              try {
-                const data = await fetcher(
-                  `/api/tmdb/tv/${item.tmdb_id}/season/${season.season_number}?language=en-US`,
-                )
-                return [season.season_number, data.episodes || []] as const
-              } catch (error) {
-                console.error('Error fetching season episodes:', error)
-                return [season.season_number, null] as const
-              }
-            }),
-          )
+      for (const { item, seasons } of itemsMissingEpisodeDetails) {
+        const fetchedEntries = await Promise.all(
+          seasons.map(async (season) => {
+            attemptedEpisodeDetails.current[item.id] = {
+              ...(attemptedEpisodeDetails.current[item.id] || {}),
+              [season.season_number]: true,
+            }
 
-          const fetchedMap = fetchedEntries.reduce<SeasonEpisodeMap>(
-            (map, [seasonNumber, episodes]) => {
-              if (episodes) map[seasonNumber] = episodes
-              return map
+            try {
+              const data = await fetcher(
+                `/api/tmdb/tv/${item.tmdb_id}/season/${season.season_number}?language=en-US`,
+              )
+              return [season.season_number, data.episodes || []] as const
+            } catch (error) {
+              console.error('Error fetching season episodes:', error)
+              return [season.season_number, []] as const
+            }
+          }),
+        )
+
+        const fetchedMap = fetchedEntries.reduce<SeasonEpisodeMap>(
+          (map, [seasonNumber, episodes]) => {
+            map[seasonNumber] = episodes
+            return map
+          },
+          {},
+        )
+
+        if (!isCancelled && Object.keys(fetchedMap).length > 0) {
+          setEpisodeDetails((prev) => ({
+            ...prev,
+            [item.id]: {
+              ...(prev[item.id] || {}),
+              ...fetchedMap,
             },
-            {},
-          )
-
-          if (Object.keys(fetchedMap).length > 0) {
-            setEpisodeDetails((prev) => ({
-              ...prev,
-              [item.id]: {
-                ...(prev[item.id] || {}),
-                ...fetchedMap,
-              },
-            }))
-          }
-        }),
-      )
+          }))
+        }
+      }
     }
 
     if (watchlistItems.length > 0) fetchEpisodeDetails()
+
+    return () => {
+      isCancelled = true
+    }
   }, [episodeDetails, supabase, updateWatchlistItem, watchlistItems])
 
   const statusByItemId = useMemo(
